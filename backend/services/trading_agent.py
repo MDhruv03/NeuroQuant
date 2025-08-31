@@ -34,7 +34,13 @@ class BacktestEngine:
         train_env = TradingEnv(train_data)
         
         if agent_config and agent_config['type'] == 'IndicatorBased':
-            agent = IndicatorAgent(train_env, **agent_config['parameters'])
+            # Rename parameters to match IndicatorAgent's constructor
+            indicator_params = {}
+            if 'short_sma' in agent_config['parameters']:
+                indicator_params['short_sma_period'] = agent_config['parameters']['short_sma']
+            if 'long_sma' in agent_config['parameters']:
+                indicator_params['long_sma_period'] = agent_config['parameters']['long_sma']
+            agent = IndicatorAgent(train_env, **indicator_params)
             print(f"Using Indicator-Based Agent: {agent_config['name']}")
         elif agent_config and agent_config['type'] == 'Random':
             # For a truly random agent, we might not even need an agent class,

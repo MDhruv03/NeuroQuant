@@ -308,10 +308,19 @@ async def get_custom_datasets(conn: sqlite3.Connection = Depends(get_db)):
 
 
 @router.get("/symbols")
-async def get_popular_symbols():
-    """Get list of popular trading symbols"""
+async def get_popular_symbols(conn: sqlite3.Connection = Depends(get_db)): # Inject conn
+    """Get list of popular trading symbols and custom datasets"""
+    yfinance_symbols = ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "NVDA", "META", "NFLX", "AMD", "CRM"]
+    
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name FROM custom_datasets")
+    custom_datasets = cursor.fetchall()
+    
+    custom_symbol_options = [{"id": row['id'], "name": f"Custom: {row['name']}"} for row in custom_datasets]
+    
     return {
-        "symbols": ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "NVDA", "META", "NFLX", "AMD", "CRM"]
+        "yfinance_symbols": yfinance_symbols,
+        "custom_datasets": custom_symbol_options
     }
 
 @router.post("/agents", response_model=AgentResponse)

@@ -132,7 +132,7 @@
         </footer>
     </div>
     <script>
-        const BACKEND_URL = 'http://localhost:8000'; // Assuming backend runs on this URL
+        const BACKEND_URL = 'http://127.0.0.1:8000'; // Assuming backend runs on this URL
 
         document.addEventListener('DOMContentLoaded', () => {
             loadInitialData(); // Load symbols and agents
@@ -167,6 +167,7 @@
         }
 
         async function loadInitialData() {
+            console.log('loadInitialData function called'); // Add this line
             try {
                 // Load Symbols and Custom Datasets
                 const symbolResponse = await fetch(`${BACKEND_URL}/symbols`);
@@ -347,3 +348,121 @@
                 loadingIndicator.classList.add('hidden');
             }
         }
+        function updateDashboard(data) {
+            document.getElementById('totalPnl').textContent = `${data.agent_return.toFixed(2)}%`; // Assuming agent_return is PnL
+            document.getElementById('agentReturn').textContent = `${data.agent_return.toFixed(2)}%`;
+            document.getElementById('totalTrades').textContent = data.total_trades;
+
+            const tradesTableBody = document.getElementById('recentTradesTableBody');
+            tradesTableBody.innerHTML = '';
+            data.trades.forEach(trade => {
+                const row = tradesTableBody.insertRow();
+                row.innerHTML = `
+                    <td class="py-2">${trade.date}</td>
+                    <td class="py-2 ${trade.action === 'buy' ? 'text-green-500' : 'text-red-500'}">${trade.action.toUpperCase()}</td>
+                    <td class="py-2">${trade.shares.toFixed(2)}</td>
+                    <td class="py-2">${trade.price.toFixed(2)}</td>
+                    <td class="py-2">${trade.pnl !== undefined ? `${trade.pnl.toFixed(2)}` : '-'}</td>
+                `;
+            });
+
+            // Draw Equity Curve
+            setTimeout(() => {
+                drawEquityCurve(data.portfolio_history, data.portfolio_dates, 'equityChartContainer');
+            }, 50); // Small delay
+        }
+
+        // Reusing drawEquityCurve from backtest.html, adapted for a generic container ID
+        function drawEquityCurve(history, dates, containerId) {
+            const chartContainer = document.getElementById(containerId);
+            chartContainer.innerHTML = ''; // Clear previous chart
+
+            if (history.length < 2) {
+                chartContainer.textContent = 'Not enough data to draw chart.';
+                return;
+            }
+
+            const width = chartContainer.clientWidth;
+            const height = chartContainer.clientHeight;
+            const padding = 40; // Increased padding for labels
+
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', width);
+            svg.setAttribute('height', height);
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            svg.setAttribute('preserveAspectRatio', 'none');
+
+            const minVal = Math.min(...history);
+            const maxVal = Math.max(...history);
+
+            const xScale = (i) => padding + (i / (history.length - 1)) * (width - 2 * padding);
+            const yScale = (val) => height - padding - ((val - minVal) / (maxVal - minVal)) * (height - 2 * padding);
+
+            let pathData = `M ${xScale(0)} ${yScale(history[0])}`;
+            for (let i = 1; i < history.length; i++) {
+                pathData += ` L ${xScale(i)} ${yScale(history[i])}`;
+            }
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', '#4CAF50'); // Green color for the line
+            path.setAttribute('stroke-width', '2');
+            svg.appendChild(path);
+
+            // Add axes (minimalistic)
+            const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            xAxis.setAttribute('x1', padding);
+            xAxis.setAttribute('y1', height - padding);
+            xAxis.setAttribute('x2', width - padding);
+            xAxis.setAttribute('y2', height - padding);
+            xAxis.setAttribute('stroke', '#555');
+            svg.appendChild(xAxis);
+
+            const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            yAxis.setAttribute('x1', padding);
+            yAxis.setAttribute('y1', padding);
+            yAxis.setAttribute('x2', padding);
+            yAxis.setAttribute('y2', height - padding);
+            yAxis.setAttribute('stroke', '#555');
+            svg.appendChild(yAxis);
+
+            // Add Y-axis labels (min and max values)
+            const yMinLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yMinLabel.setAttribute('x', padding - 5);
+            yMinLabel.setAttribute('y', yScale(minVal) + 5);
+            yMinLabel.setAttribute('fill', 'white');
+            yMinLabel.setAttribute('text-anchor', 'end');
+            yMinLabel.setAttribute('font-size', '10');
+            yMinLabel.textContent = `${minVal.toFixed(2)}`;
+            svg.appendChild(yMinLabel);
+
+            const yMaxLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yMaxLabel.setAttribute('x', padding - 5);
+            yMaxLabel.setAttribute('y', yScale(maxVal) - 5);
+            yMaxLabel.setAttribute('fill', 'white');
+            yMaxLabel.setAttribute('text-anchor', 'end');
+            yMaxLabel.setAttribute('font-size', '10');
+            yMaxLabel.textContent = `${maxVal.toFixed(2)}`;
+            svg.appendChild(yMaxLabel);
+
+            // Add X-axis labels
+            const numLabels = 5; // Number of labels to display
+            for (let i = 0; i < numLabels; i++) {
+                const index = Math.floor(i * (dates.length - 1) / (numLabels - 1));
+                const x = xScale(index);
+                const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                dateLabel.setAttribute('x', x);
+                dateLabel.setAttribute('y', height - padding + 15);
+                dateLabel.setAttribute('fill', 'white');
+                dateLabel.setAttribute('text-anchor', 'middle');
+                dateLabel.setAttribute('font-size', '10');
+                dateLabel.textContent = dates[index];
+                svg.appendChild(dateLabel);
+            }
+
+            chartContainer.appendChild(svg);
+        }
+    </script>
+</body>
+</html>
