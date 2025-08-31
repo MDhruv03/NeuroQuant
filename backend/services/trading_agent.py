@@ -1,0 +1,72 @@
+import numpy as np
+import pandas as pd
+from typing import Dict
+
+from ..services.market_data import MarketDataProvider
+from ...rl.agent import RLAgent
+from ...rl.environment import TradingEnv
+
+# ========================================
+# BACKTESTING ENGINE
+# ========================================
+
+class BacktestEngine:
+    """Simple backtesting engine"""
+    
+    def __init__(self, data_provider: MarketDataProvider):
+        self.data_provider = data_provider
+    
+    def run_backtest(self, symbol: str, train_split: float = 0.7) -> Dict:
+        """Run backtest on historical data"""
+        # Fetch and prepare data
+        data = self.data_provider.fetch_stock_data(symbol)
+        data['Return'] = data['Close'].pct_change()
+        data.dropna(inplace=True)
+        data = self.data_provider.calculate_technical_indicators(data)
+        
+        # Split data
+        split_point = int(len(data) * train_split)
+        train_data = data.iloc[:split_point]
+        test_data = data.iloc[split_point:]
+        
+        # Train agent
+        print(f"Training agent on {len(train_data)} days...")
+        train_env = TradingEnv(train_data)
+        agent = RLAgent(train_env)
+        agent.train()
+        
+        # Test agent
+        print(f"Testing agent on {len(test_data)} days...")
+        test_env = TradingEnv(test_data)
+        test_results = self._test_agent(agent, test_env)
+        
+        # Calculate metrics
+        buy_hold_return = (test_data.iloc[-1]['Close'] / test_data.iloc[0]['Close'] - 1) * 100
+        agent_return = ((test_results['final_value'] / test_results['initial_value']) - 1) * 100
+        
+        return {
+            'symbol': symbol,
+            'test_period': f"{test_data.index[0].date()} to {test_data.index[-1].date()}",
+            'agent_return': agent_return,
+            'buy_hold_return': buy_hold_return,
+            'outperformance': agent_return - buy_hold_return,
+            'total_trades': len(test_results['trades']),
+            'final_value': test_results['final_value'],
+            'trades': test_results['trades'][-10:]  # Last 10 trades for display
+        }
+    
+    def _test_agent(self, agent: RLAgent, env: TradingEnv) -> Dict:
+        """Test the trained agent"""
+        obs, _ = env.reset()
+        initial_value = env.portfolio
+        done = False
+        
+        while not done:
+            action, _ = agent.predict(obs)
+            obs, _, done, _, _ = env.step(action)
+            
+        return {
+            'initial_value': initial_value,
+            'final_value': env.portfolio,
+            'trades': [] # TODO: Implement trade tracking in the new environment
+        }
