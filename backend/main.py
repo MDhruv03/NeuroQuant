@@ -3,7 +3,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from .api import routes
+from backend.api import routes
+from database.database import create_db_and_tables # Import the database function
+
+# Initialize database
+create_db_and_tables()
 
 app = FastAPI(title="NeuroQuant MVP", description="RL-based Trading Agent API")
 

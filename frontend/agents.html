@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroQuant Agents</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-black text-white font-mono">
+    <div class="container mx-auto p-4">
+        <header class="flex justify-between items-center py-4 border-b border-gray-700">
+            <h1 class="text-2xl font-bold">NeuroQuant</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="index.html" class="hover:text-gray-400">Dashboard</a></li>
+                    <li><a href="agents.html" class="hover:text-gray-400">Agents</a></li>
+                    <li><a href="backtest.html" class="hover:text-gray-400">Backtest</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main class="py-8">
+            <h2 class="text-xl font-semibold mb-4">Agent Management</h2>
+            
+            <section class="mb-8 p-4 bg-gray-900 rounded shadow-lg">
+                <h3 class="text-lg font-medium mb-4">Create New Agent</h3>
+                <form id="createAgentForm" class="space-y-4">
+                    <div>
+                        <label for="agentName" class="block text-gray-400 text-sm font-bold mb-2">Agent Name:</label>
+                        <input type="text" id="agentName" name="agentName" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600" required>
+                    </div>
+                    <div>
+                        <label for="agentType" class="block text-gray-400 text-sm font-bold mb-2">Agent Type:</label>
+                        <select id="agentType" name="agentType" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600" required>
+                            <option value="DQN">DQN</option>
+                            <option value="PPO">PPO</option>
+                            <option value="IndicatorBased">IndicatorBased</option>
+                            <!-- Add more agent types as needed -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="agentParameters" class="block text-gray-400 text-sm font-bold mb-2">Parameters (JSON):</label>
+                        <textarea id="agentParameters" name="agentParameters" rows="4" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600" placeholder='{"learning_rate": 0.001, "gamma": 0.99}'></textarea>
+                    </div>
+                    <button type="submit" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Create Agent</button>
+                    <div id="createAgentMessage" class="mt-4 text-green-500 hidden"></div>
+                    <div id="createAgentError" class="mt-4 text-red-500 hidden"></div>
+                </form>
+            </section>
+
+            <section class="mb-8 p-4 bg-gray-900 rounded shadow-lg">
+                <h3 class="text-lg font-medium mb-4">Existing Agents</h3>
+                <div id="agentList" class="space-y-2">
+                    <p class="text-gray-400">Loading agents...</p>
+                </div>
+                <div id="agentListError" class="mt-4 text-red-500 hidden"></div>
+            </section>
+        </main>
+
+        <footer class="text-center py-4 border-t border-gray-700 mt-8">
+            <p>&copy; 2025 NeuroQuant. All rights reserved.</p>
+        </footer>
+    </div>
+    <script>
+        const BACKEND_URL = 'http://localhost:8000'; // Assuming backend runs on this URL
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAgents();
+            document.getElementById('createAgentForm').addEventListener('submit', createAgent);
+        });
+
+        async function loadAgents() {
+            const agentListDiv = document.getElementById('agentList');
+            const agentListError = document.getElementById('agentListError');
+            agentListDiv.innerHTML = '<p class="text-gray-400">Loading agents...</p>';
+            agentListError.classList.add('hidden');
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/agents`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const agents = await response.json();
+                
+                agentListDiv.innerHTML = ''; // Clear loading message
+
+                if (agents.length === 0) {
+                    agentListDiv.innerHTML = '<p class="text-gray-400">No agents created yet.</p>';
+                    return;
+                }
+
+                agents.forEach(agent => {
+                    const agentDiv = document.createElement('div');
+                    agentDiv.className = 'p-3 border border-gray-700 rounded';
+                    agentDiv.innerHTML = `
+                        <p class="font-bold">${agent.name} (ID: ${agent.id})</p>
+                        <p class="text-sm text-gray-400">Type: ${agent.type}</p>
+                        <p class="text-sm text-gray-400">Parameters: ${JSON.stringify(agent.parameters)}</p>
+                    `;
+                    agentListDiv.appendChild(agentDiv);
+                });
+
+            } catch (error) {
+                console.error('Error loading agents:', error);
+                agentListDiv.innerHTML = ''; // Clear loading message
+                agentListError.textContent = `Failed to load agents: ${error.message}`;
+                agentListError.classList.remove('hidden');
+            }
+        }
+
+        async function createAgent(event) {
+            event.preventDefault();
+
+            const agentName = document.getElementById('agentName').value;
+            const agentType = document.getElementById('agentType').value;
+            let agentParameters = document.getElementById('agentParameters').value;
+
+            const createAgentMessage = document.getElementById('createAgentMessage');
+            const createAgentError = document.getElementById('createAgentError');
+            createAgentMessage.classList.add('hidden');
+            createAgentError.classList.add('hidden');
+
+            try {
+                // Attempt to parse parameters as JSON
+                let parsedParameters = {};
+                if (agentParameters.trim() !== '') {
+                    parsedParameters = JSON.parse(agentParameters);
+                }
+
+                const response = await fetch(`${BACKEND_URL}/agents`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        name: agentName, 
+                        type: agentType, 
+                        parameters: parsedParameters 
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                }
+
+                const newAgent = await response.json();
+                createAgentMessage.textContent = `Agent '${newAgent.name}' created successfully!`;
+                createAgentMessage.classList.remove('hidden');
+
+                // Clear form
+                document.getElementById('createAgentForm').reset();
+                document.getElementById('agentParameters').value = ''; // Ensure textarea is cleared
+
+                loadAgents(); // Reload agent list
+
+            } catch (error) {
+                console.error('Error creating agent:', error);
+                createAgentError.textContent = `Failed to create agent: ${error.message}`;
+                createAgentError.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

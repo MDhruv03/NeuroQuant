@@ -10,8 +10,12 @@ class MarketDataProvider:
     def __init__(self):
         self.analyzer = SentimentIntensityAnalyzer()
     
-    def fetch_stock_data(self, symbol: str, period: str = "1y") -> pd.DataFrame:
-        """Fetch OHLCV data from Yahoo Finance"""
+    def fetch_stock_data(self, symbol: str, period: str = "1y", custom_data_df: pd.DataFrame = None) -> pd.DataFrame:
+        """Fetch OHLCV data from Yahoo Finance or use custom data"""
+        if custom_data_df is not None:
+            print(f"Using custom data for {symbol}")
+            return custom_data_df
+        
         try:
             ticker = yf.Ticker(symbol)
             data = ticker.history(period=period)

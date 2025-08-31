@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroQuant Trading Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-black text-white font-mono">
+    <div class="container mx-auto p-4">
+        <header class="flex justify-between items-center py-4 border-b border-gray-700">
+            <h1 class="text-2xl font-bold">NeuroQuant - Agentic AI Hedge Fund</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="index.html" class="hover:text-gray-400">Dashboard</a></li>
+                    <li><a href="agents.html" class="hover:text-gray-400">Agents</a></li>
+                    <li><a href="backtest.html" class="hover:text-gray-400">Backtest</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <section class="py-4 border-b border-gray-700 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Run Backtest</h2>
+            
+            <div class="mb-4 p-4 bg-gray-900 rounded shadow-lg">
+                <h3 class="text-lg font-medium mb-2">Upload Custom Dataset</h3>
+                <form id="uploadDatasetForm" class="space-y-4">
+                    <div>
+                        <label for="datasetName" class="block text-gray-400 text-sm font-bold mb-2">Dataset Name:</label>
+                        <input type="text" id="datasetName" name="datasetName" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600" required>
+                    </div>
+                    <div>
+                        <label for="datasetDescription" class="block text-gray-400 text-sm font-bold mb-2">Description (Optional):</label>
+                        <input type="text" id="datasetDescription" name="datasetDescription" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600">
+                    </div>
+                    <div>
+                        <label for="datasetFile" class="block text-gray-400 text-sm font-bold mb-2">CSV File:</label>
+                        <input type="file" id="datasetFile" name="datasetFile" accept=".csv" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600" required>
+                    </div>
+                    <button type="submit" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Upload Dataset</button>
+                    <div id="uploadMessage" class="mt-4 text-green-500 hidden"></div>
+                    <div id="uploadError" class="mt-4 text-red-500 hidden"></div>
+                </form>
+            </div>
+
+            <form id="backtestForm" class="flex flex-wrap gap-4 items-end">
+                <div class="flex-grow">
+                    <label for="dataSource" class="block text-gray-400 text-sm font-bold mb-2">Data Source:</label>
+                    <select id="dataSource" name="dataSource" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600">
+                        <option value="yfinance">Yahoo Finance</option>
+                        <option value="custom">Custom Dataset</option>
+                    </select>
+                </div>
+                <div class="flex-grow" id="yfinanceSymbolDiv">
+                    <label for="symbol" class="block text-gray-400 text-sm font-bold mb-2">Select Symbol:</label>
+                    <select id="symbol" name="symbol" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600">
+                        <!-- YFinance Symbols will be loaded here by JavaScript -->
+                    </select>
+                </div>
+                <div class="flex-grow hidden" id="customDatasetDiv">
+                    <label for="customDatasetSelect" class="block text-gray-400 text-sm font-bold mb-2">Select Custom Dataset:</label>
+                    <select id="customDatasetSelect" name="customDatasetSelect" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600">
+                        <!-- Custom Datasets will be loaded here by JavaScript -->
+                    </select>
+                </div>
+                <div class="flex-grow">
+                    <label for="agentSelect" class="block text-gray-400 text-sm font-bold mb-2">Select Agent:</label>
+                    <select id="agentSelect" name="agentSelect" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600">
+                        <option value="">Default Agent</option>
+                        <!-- Agents will be loaded here by JavaScript -->
+                    </select>
+                </div>
+                <div class="flex-grow">
+                    <label for="trainSplit" class="block text-gray-400 text-sm font-bold mb-2">Train Split (%):</label>
+                    <input type="number" id="trainSplit" name="trainSplit" value="70" min="10" max="90" class="bg-gray-800 text-white p-2 rounded w-20 focus:outline-none focus:ring-2 focus:ring-gray-600">
+                </div>
+                <button type="submit" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Run Backtest</button>
+            </form>
+            <div id="loadingIndicator" class="mt-4 text-gray-400 hidden">Running backtest... Please wait.</div>
+            <div id="errorMessage" class="mt-4 text-red-500 hidden"></div>
+        </section>
+
+        <main class="py-8">
+            <section class="mb-8">
+                <h2 class="text-xl font-semibold mb-4">Overall Performance</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-900 p-4 rounded shadow-lg">
+                        <h3 class="text-lg font-medium">Total PnL</h3>
+                        <p id="totalPnl" class="text-3xl text-green-500"></p>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded shadow-lg">
+                        <h3 class="text-lg font-medium">Agent Return</h3>
+                        <p id="agentReturn" class="text-3xl"></p>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded shadow-lg">
+                        <h3 class="text-lg font-medium">Total Trades</h3>
+                        <p id="totalTrades" class="text-3xl"></p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mb-8">
+                <h2 class="text-xl font-semibold mb-4">Recent Trades</h2>
+                <div class="bg-gray-900 p-4 rounded shadow-lg">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr>
+                                <th class="text-left py-2">Symbol</th>
+                                <th class="text-left py-2">Type</th>
+                                <th class="text-left py-2">Quantity</th>
+                                <th class="text-left py-2">Entry Price</th>
+                                <th class="text-left py-2">Exit Price</th>
+                                <th class="text-left py-2">PnL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentTradesTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">Equity Curve (Placeholder)</h2>
+                <div id="equityChartContainer" class="bg-gray-900 p-4 rounded shadow-lg h-64 flex items-center justify-center text-gray-500">
+                    [Chart will be drawn here]
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center py-4 border-t border-gray-700 mt-8">
+            <p>&copy; 2025 NeuroQuant. All rights reserved.</p>
+        </footer>
+    </div>
+    <script>
+        const BACKEND_URL = 'http://localhost:8000'; // Assuming backend runs on this URL
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadInitialData(); // Load symbols and agents
+            document.getElementById('backtestForm').addEventListener('submit', runBacktest);
+            document.getElementById('uploadDatasetForm').addEventListener('submit', uploadDataset); // New: Upload form listener
+            loadLatestBacktest(); // Load and display the latest backtest results
+        });
+
+        async function loadLatestBacktest() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/backtest_runs`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const runs = await response.json();
+                if (runs.length > 0) {
+                    // Assuming the API returns runs sorted by timestamp DESC
+                    updateDashboard(runs[0]); // Display the most recent run
+                } else {
+                    // Clear dashboard if no runs exist
+                    document.getElementById('totalPnl').textContent = '';
+                    document.getElementById('agentReturn').textContent = '';
+                    document.getElementById('totalTrades').textContent = '';
+                    document.getElementById('recentTradesTableBody').innerHTML = '';
+                    document.getElementById('equityChartContainer').innerHTML = 'No backtest data to display. Run a backtest!';
+                }
+            } catch (error) {
+                console.error('Error loading latest backtest:', error);
+                document.getElementById('errorMessage').textContent = `Failed to load latest backtest: ${error.message}`;
+                document.getElementById('errorMessage').classList.remove('hidden');
+            }
+        }
+
+        async function loadInitialData() {
+            try {
+                // Load Symbols and Custom Datasets
+                const symbolResponse = await fetch(`${BACKEND_URL}/symbols`);
+                if (!symbolResponse.ok) {
+                    throw new Error(`HTTP error! status: ${symbolResponse.status} for symbols`);
+                }
+                const symbolData = await symbolResponse.json();
+                
+                const yfinanceSymbolSelect = document.getElementById('symbol');
+                yfinanceSymbolSelect.innerHTML = ''; // Clear existing options
+                symbolData.yfinance_symbols.forEach(symbol => {
+                    const option = document.createElement('option');
+                    option.value = symbol;
+                    option.textContent = symbol;
+                    yfinanceSymbolSelect.appendChild(option);
+                });
+
+                const customDatasetSelect = document.getElementById('customDatasetSelect');
+                customDatasetSelect.innerHTML = ''; // Clear existing options
+                symbolData.custom_datasets.forEach(dataset => {
+                    const option = document.createElement('option');
+                    option.value = dataset.id;
+                    option.textContent = dataset.name;
+                    customDatasetSelect.appendChild(option);
+                });
+
+                // Load Agents
+                const agentResponse = await fetch(`${BACKEND_URL}/agents`);
+                if (!agentResponse.ok) {
+                    throw new Error(`HTTP error! status: ${agentResponse.status} for agents`);
+                }
+                const agentData = await agentResponse.json();
+                const agentSelect = document.getElementById('agentSelect');
+                agentSelect.innerHTML = '<option value="">Default Agent</option>'; // Keep default option
+                agentData.forEach(agent => {
+                    const option = document.createElement('option');
+                    option.value = agent.id;
+                    option.textContent = `${agent.name} (${agent.type})`;
+                    agentSelect.appendChild(option);
+                });
+
+                // Set up data source change listener
+                document.getElementById('dataSource').addEventListener('change', handleDataSourceChange);
+                handleDataSourceChange(); // Call initially to set correct visibility
+
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+                document.getElementById('errorMessage').textContent = `Failed to load initial data: ${error.message}. Is the backend running?`;
+                document.getElementById('errorMessage').classList.remove('hidden');
+            }
+        }
+
+        function handleDataSourceChange() {
+            const dataSource = document.getElementById('dataSource').value;
+            const yfinanceDiv = document.getElementById('yfinanceSymbolDiv');
+            const customDiv = document.getElementById('customDatasetDiv');
+
+            if (dataSource === 'yfinance') {
+                yfinanceDiv.classList.remove('hidden');
+                customDiv.classList.add('hidden');
+            } else if (dataSource === 'custom') {
+                yfinanceDiv.classList.add('hidden');
+                customDiv.classList.remove('hidden');
+            }
+        }
+
+        async function uploadDataset(event) {
+            event.preventDefault();
+
+            const datasetName = document.getElementById('datasetName').value;
+            const datasetDescription = document.getElementById('datasetDescription').value;
+            const datasetFile = document.getElementById('datasetFile').files[0];
+
+            const uploadMessage = document.getElementById('uploadMessage');
+            const uploadError = document.getElementById('uploadError');
+            uploadMessage.classList.add('hidden');
+            uploadError.classList.add('hidden');
+
+            if (!datasetFile) {
+                uploadError.textContent = 'Please select a CSV file to upload.';
+                uploadError.classList.remove('hidden');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('name', datasetName);
+            formData.append('file', datasetFile);
+            formData.append('description', datasetDescription);
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/upload_dataset`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                uploadMessage.textContent = result.message;
+                uploadMessage.classList.remove('hidden');
+
+                // Clear form and reload custom datasets
+                document.getElementById('uploadDatasetForm').reset();
+                loadInitialData(); // Reload symbols and custom datasets
+
+            } catch (error) {
+                console.error('Error uploading dataset:', error);
+                uploadError.textContent = `Upload failed: ${error.message}`;
+                uploadError.classList.remove('hidden');
+            }
+        }
+
+        async function runBacktest(event) {
+            event.preventDefault();
+
+            const dataSource = document.getElementById('dataSource').value;
+            let symbol = '';
+            let customDatasetId = null;
+
+            if (dataSource === 'yfinance') {
+                symbol = document.getElementById('symbol').value;
+            } else if (dataSource === 'custom') {
+                customDatasetId = parseInt(document.getElementById('customDatasetSelect').value);
+                if (!customDatasetId) {
+                    document.getElementById('errorMessage').textContent = 'Please select a custom dataset.';
+                    document.getElementById('errorMessage').classList.remove('hidden');
+                    return;
+                }
+                // For custom data, symbol will be the dataset name from the option text
+                symbol = document.getElementById('customDatasetSelect').options[document.getElementById('customDatasetSelect').selectedIndex].text;
+            }
+
+            const agentId = document.getElementById('agentSelect').value;
+            const trainSplit = parseFloat(document.getElementById('trainSplit').value) / 100;
+
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const errorMessage = document.getElementById('errorMessage');
+            loadingIndicator.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+
+            try {
+                const requestBody = { 
+                    symbol: symbol, // This will be overwritten by backend for custom data
+                    train_split: trainSplit,
+                    data_source: dataSource
+                };
+                if (agentId) {
+                    requestBody.agent_id = parseInt(agentId);
+                }
+                if (dataSource === 'custom') {
+                    requestBody.custom_dataset_id = customDatasetId;
+                }
+
+                const response = await fetch(`${BACKEND_URL}/backtest`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                updateDashboard(data);
+
+            } catch (error) {
+                console.error('Error running backtest:', error);
+                errorMessage.textContent = `Backtest failed: ${error.message}`;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }

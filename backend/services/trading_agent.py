@@ -3,8 +3,8 @@ import pandas as pd
 from typing import Dict
 
 from ..services.market_data import MarketDataProvider
-from ...rl.agent import RLAgent
-from ...rl.environment import TradingEnv
+from rl.agent import RLAgent, IndicatorAgent # Import IndicatorAgent
+from rl.environment import TradingEnv
 
 # ========================================
 # BACKTESTING ENGINE
@@ -16,7 +16,7 @@ class BacktestEngine:
     def __init__(self, data_provider: MarketDataProvider):
         self.data_provider = data_provider
     
-    def run_backtest(self, symbol: str, train_split: float = 0.7) -> Dict:
+    def run_backtest(self, symbol: str, train_split: float = 0.7, agent_config: Dict = None) -> Dict:
         """Run backtest on historical data"""
         # Fetch and prepare data
         data = self.data_provider.fetch_stock_data(symbol)
@@ -28,12 +28,25 @@ class BacktestEngine:
         split_point = int(len(data) * train_split)
         train_data = data.iloc[:split_point]
         test_data = data.iloc[split_point:]
-        
-        # Train agent
-        print(f"Training agent on {len(train_data)} days...")
+
+        # Instantiate and train agent
+        print(f"Preparing agent on {len(train_data)} days...")
         train_env = TradingEnv(train_data)
-        agent = RLAgent(train_env)
-        agent.train()
+        
+        if agent_config and agent_config['type'] == 'IndicatorBased':
+            agent = IndicatorAgent(train_env, **agent_config['parameters'])
+            print(f"Using Indicator-Based Agent: {agent_config['name']}")
+        elif agent_config and agent_config['type'] == 'Random':
+            # For a truly random agent, we might not even need an agent class,
+            # but for consistency, we can have a simple one.
+            # For now, we'll just use RLAgent as a placeholder for Random
+            # and rely on its default random exploration if not trained.
+            agent = RLAgent(train_env) # Placeholder for Random, will not train
+            print(f"Using Random Agent: {agent_config['name']}")
+        else: # Default to RLAgent (DQN/PPO)
+            agent = RLAgent(train_env)
+            print(f"Using RLAgent (DQN/PPO): {agent_config['name'] if agent_config else 'Default'}")
+            agent.train() # Only train RLAgent
         
         # Test agent
         print(f"Testing agent on {len(test_data)} days...")
@@ -52,7 +65,9 @@ class BacktestEngine:
             'outperformance': agent_return - buy_hold_return,
             'total_trades': len(test_results['trades']),
             'final_value': test_results['final_value'],
-            'trades': test_results['trades'][-10:]  # Last 10 trades for display
+            'trades': test_results['trades'],
+            'portfolio_history': test_results['portfolio_history'],
+            'portfolio_dates': test_results['portfolio_dates']
         }
     
     def _test_agent(self, agent: RLAgent, env: TradingEnv) -> Dict:
@@ -68,5 +83,7 @@ class BacktestEngine:
         return {
             'initial_value': initial_value,
             'final_value': env.portfolio,
-            'trades': [] # TODO: Implement trade tracking in the new environment
+            'trades': env.trades,
+            'portfolio_history': env.portfolio_history,
+            'portfolio_dates': env.portfolio_dates
         }

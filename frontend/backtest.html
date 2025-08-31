@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroQuant Backtest</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-black text-white font-mono">
+    <div class="container mx-auto p-4">
+        <header class="flex justify-between items-center py-4 border-b border-gray-700">
+            <h1 class="text-2xl font-bold">NeuroQuant</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="index.html" class="hover:text-gray-400">Dashboard</a></li>
+                    <li><a href="agents.html" class="hover:text-gray-400">Agents</a></li>
+                    <li><a href="backtest.html" class="hover:text-gray-400">Backtest</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main class="py-8">
+            <h2 class="text-xl font-semibold mb-4">Backtest History</h2>
+            
+            <section class="mb-8 p-4 bg-gray-900 rounded shadow-lg">
+                <h3 class="text-lg font-medium mb-4">Past Backtest Runs</h3>
+                <div id="backtestRunList" class="space-y-2">
+                    <p class="text-gray-400">Loading backtest runs...</p>
+                </div>
+                <div id="backtestListError" class="mt-4 text-red-500 hidden"></div>
+            </section>
+
+            <section id="backtestDetail" class="hidden">
+                <h2 class="text-xl font-semibold mb-4">Backtest Details for <span id="detailSymbol"></span> with <span id="detailAgentName"></span></h2>
+                <p class="text-gray-400 mb-4">Test Period: <span id="detailTestPeriod"></span></p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div class="bg-gray-900 p-4 rounded shadow-lg">
+                        <h3 class="text-lg font-medium">Agent Return</h3>
+                        <p id="detailAgentReturn" class="text-3xl"></p>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded shadow-lg">
+                        <h3 class="text-lg font-medium">Buy & Hold Return</h3>
+                        <p id="detailBuyHoldReturn" class="text-3xl"></p>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded shadow-lg">
+                        <h3 class="text-lg font-medium">Outperformance</h3>
+                        <p id="detailOutperformance" class="text-3xl"></p>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded shadow-lg">
+                        <h3 class="text-lg font-medium">Total Trades</h3>
+                        <p id="detailTotalTrades" class="text-3xl"></p>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded shadow-lg">
+                        <h3 class="text-lg font-medium">Final Portfolio Value</h3>
+                        <p id="detailFinalValue" class="text-3xl text-green-500"></p>
+                    </div>
+                </div>
+
+                <h3 class="text-lg font-semibold mb-4">Equity Curve</h3>
+                <div id="detailEquityChartContainer" class="bg-gray-900 p-4 rounded shadow-lg h-64 flex items-center justify-center text-gray-500">
+                    [Chart will be drawn here]
+                </div>
+
+                <h3 class="text-lg font-semibold mb-4 mt-8">Trades</h3>
+                <div class="bg-gray-900 p-4 rounded shadow-lg">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr>
+                                <th class="text-left py-2">Date</th>
+                                <th class="text-left py-2">Type</th>
+                                <th class="text-left py-2">Quantity</th>
+                                <th class="text-left py-2">Price</th>
+                                <th class="text-left py-2">PnL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailTradesTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center py-4 border-t border-gray-700 mt-8">
+            <p>&copy; 2025 NeuroQuant. All rights reserved.</p>
+        </footer>
+    </div>
+    <script>
+        const BACKEND_URL = 'http://localhost:8000'; // Assuming backend runs on this URL
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBacktestRuns();
+        });
+
+        async function loadBacktestRuns() {
+            const runListDiv = document.getElementById('backtestRunList');
+            const listErrorDiv = document.getElementById('backtestListError');
+            runListDiv.innerHTML = '<p class="text-gray-400">Loading backtest runs...</p>';
+            listErrorDiv.classList.add('hidden');
+            document.getElementById('backtestDetail').classList.add('hidden'); // Hide details initially
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/backtest_runs`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const runs = await response.json();
+                
+                runListDiv.innerHTML = ''; // Clear loading message
+
+                if (runs.length === 0) {
+                    runListDiv.innerHTML = '<p class="text-gray-400">No backtest runs found yet. Run a backtest from the Dashboard!</p>';
+                    return;
+                }
+
+                runs.forEach(run => {
+                    const runItem = document.createElement('div');
+                    runItem.className = 'p-3 border border-gray-700 rounded cursor-pointer hover:bg-gray-800';
+                    runItem.innerHTML = `
+                        <p class="font-bold">${run.symbol} - ${run.agent_name || 'Default Agent'} - ${run.timestamp.substring(0, 10)}</p>
+                        <p class="text-sm text-gray-400">Return: ${run.agent_return.toFixed(2)}% | Trades: ${run.total_trades}</p>
+                    `;
+                    runItem.addEventListener('click', () => showBacktestDetails(run.id));
+                    runListDiv.appendChild(runItem);
+                });
+
+            } catch (error) {
+                console.error('Error loading backtest runs:', error);
+                runListDiv.innerHTML = ''; // Clear loading message
+                listErrorDiv.textContent = `Failed to load backtest runs: ${error.message}`;
+                listErrorDiv.classList.remove('hidden');
+            }
+        }
+
+        async function showBacktestDetails(runId) {
+            const detailSection = document.getElementById('backtestDetail');
+            const listErrorDiv = document.getElementById('backtestListError');
+            detailSection.classList.add('hidden'); // Hide current details
+            listErrorDiv.classList.add('hidden'); // Hide any list errors
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/backtest_runs/${runId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                // Populate details
+                document.getElementById('detailSymbol').textContent = data.symbol;
+                document.getElementById('detailAgentName').textContent = data.agent_name || 'Default Agent';
+                document.getElementById('detailTestPeriod').textContent = data.test_period;
+                document.getElementById('detailAgentReturn').textContent = `${data.agent_return.toFixed(2)}%`;
+                document.getElementById('detailBuyHoldReturn').textContent = `${data.buy_hold_return.toFixed(2)}%`;
+                document.getElementById('detailOutperformance').textContent = `${data.outperformance.toFixed(2)}%`;
+                document.getElementById('detailTotalTrades').textContent = data.total_trades;
+                document.getElementById('detailFinalValue').textContent = `${data.final_value.toFixed(2)}`;
+
+                // Populate trades table
+                const tradesTableBody = document.getElementById('detailTradesTableBody');
+                tradesTableBody.innerHTML = '';
+                data.trades.forEach(trade => {
+                    const row = tradesTableBody.insertRow();
+                    row.innerHTML = `
+                        <td class="py-2">${trade.date}</td>
+                        <td class="py-2 ${trade.action === 'buy' ? 'text-green-500' : 'text-red-500'}">${trade.action.toUpperCase()}</td>
+                        <td class="py-2">${trade.shares.toFixed(2)}</td>
+                        <td class="py-2">${trade.price.toFixed(2)}</td>
+                        <td class="py-2">${trade.pnl !== undefined ? `${trade.pnl.toFixed(2)}` : '-'}</td>
+                    `;
+                });
+
+                // Draw Equity Curve
+                // Use setTimeout to ensure the container is rendered and has dimensions
+                setTimeout(() => {
+                    console.log('Data for drawEquityCurve:', data.portfolio_history, data.portfolio_dates);
+                    drawEquityCurve(data.portfolio_history, data.portfolio_dates, 'detailEquityChartContainer');
+                }, 50); // Small delay
+
+                detailSection.classList.remove('hidden'); // Show details
+            } catch (error) {
+                console.error('Error loading backtest details:', error);
+                listErrorDiv.textContent = `Failed to load details: ${error.message}`;
+                listErrorDiv.classList.remove('hidden');
+            }
+        }
+
+        // Reusing drawEquityCurve from index.html, adapted for a generic container ID
+        function drawEquityCurve(history, dates, containerId) {
+            console.log('drawEquityCurve received:', history, dates, containerId);
+            const chartContainer = document.getElementById(containerId);
+            chartContainer.innerHTML = ''; // Clear previous chart
+
+            if (history.length < 2) {
+                chartContainer.textContent = 'Not enough data to draw chart.';
+                return;
+            }
+
+            const width = chartContainer.clientWidth;
+            const height = chartContainer.clientHeight;
+            const padding = 40; // Increased padding for labels
+
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', width);
+            svg.setAttribute('height', height);
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            svg.setAttribute('preserveAspectRatio', 'none');
+
+            const minVal = Math.min(...history);
+            const maxVal = Math.max(...history);
+
+            const xScale = (i) => padding + (i / (history.length - 1)) * (width - 2 * padding);
+            const yScale = (val) => height - padding - ((val - minVal) / (maxVal - minVal)) * (height - 2 * padding);
+
+            let pathData = `M ${xScale(0)} ${yScale(history[0])}`;
+            for (let i = 1; i < history.length; i++) {
+                pathData += ` L ${xScale(i)} ${yScale(history[i])}`;
+            }
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', '#4CAF50'); // Green color for the line
+            path.setAttribute('stroke-width', '2');
+            svg.appendChild(path);
+
+            // Add axes (minimalistic)
+            const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            xAxis.setAttribute('x1', padding);
+            xAxis.setAttribute('y1', height - padding);
+            xAxis.setAttribute('x2', width - padding);
+            xAxis.setAttribute('y2', height - padding);
+            xAxis.setAttribute('stroke', '#555');
+            svg.appendChild(xAxis);
+
+            const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            yAxis.setAttribute('x1', padding);
+            yAxis.setAttribute('y1', padding);
+            yAxis.setAttribute('x2', padding);
+            yAxis.setAttribute('y2', height - padding);
+            yAxis.setAttribute('stroke', '#555');
+            svg.appendChild(yAxis);
+
+            // Add Y-axis labels (min and max values)
+            const yMinLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yMinLabel.setAttribute('x', padding - 5);
+            yMinLabel.setAttribute('y', yScale(minVal) + 5);
+            yMinLabel.setAttribute('fill', 'white');
+            yMinLabel.setAttribute('text-anchor', 'end');
+            yMinLabel.setAttribute('font-size', '10');
+            yMinLabel.textContent = `${minVal.toFixed(2)}`;
+            svg.appendChild(yMinLabel);
+
+            const yMaxLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yMaxLabel.setAttribute('x', padding - 5);
+            yMaxLabel.setAttribute('y', yScale(maxVal) - 5);
+            yMaxLabel.setAttribute('fill', 'white');
+            yMaxLabel.setAttribute('text-anchor', 'end');
+            yMaxLabel.setAttribute('font-size', '10');
+            yMaxLabel.textContent = `${maxVal.toFixed(2)}`;
+            svg.appendChild(yMaxLabel);
+
+            // Add X-axis labels
+            const numLabels = 5; // Number of labels to display
+            for (let i = 0; i < numLabels; i++) {
+                const index = Math.floor(i * (dates.length - 1) / (numLabels - 1));
+                const x = xScale(index);
+                const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                dateLabel.setAttribute('x', x);
+                dateLabel.setAttribute('y', height - padding + 15);
+                dateLabel.setAttribute('fill', 'white');
+                dateLabel.setAttribute('text-anchor', 'middle');
+                dateLabel.setAttribute('font-size', '10');
+                dateLabel.textContent = dates[index];
+                svg.appendChild(dateLabel);
+            }
+
+            chartContainer.appendChild(svg);
+        }
+    </script>
+</body>
+</html>
