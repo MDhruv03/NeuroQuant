@@ -1,12 +1,169 @@
-# 📈 NeuroQuant - Advanced RL Trading System
+# NeuroQuant - Advanced RL Trading System
 
-An advanced **Reinforcement Learning + FastAPI** autonomous trading system that integrates **market data fetching, RL-based agents, sentiment analysis, and comprehensive backtesting** into a production-ready, modular architecture.
+Professional reinforcement learning trading system with real-time sentiment analysis, comprehensive backtesting, and production-ready architecture.
+
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## 🚀 Features
+## Features
 
-### Core Capabilities
+- **🤖 Advanced RL Agents** - DQN, PPO, and indicator-based strategies
+- **📊 Real-time Analysis** - FinBERT sentiment + 20+ technical indicators
+- **⚡ High Performance** - Caching, vectorized operations, optimized backtesting
+- **🎨 Modern UI** - Minimalist monochrome interface with real-time charts
+- **🐳 Docker Ready** - Full containerization with docker-compose
+- **📈 Comprehensive Metrics** - Sharpe, Sortino, drawdown, win rate, and more
+- **🔒 Production Ready** - Logging, error handling, validation, testing
+
+---
+
+## Quick Start
+
+### Installation
+
+```bash
+# Clone repository
+git clone https://github.com/MDhruv03/NeuroQuant.git
+cd NeuroQuant
+
+# Run quick start script
+# Windows:
+.\quickstart.bat
+# macOS/Linux:
+chmod +x quickstart.sh && ./quickstart.sh
+
+# Start server
+python backend/main.py
+```
+
+Server starts at **http://localhost:8000**
+
+### Docker
+
+```bash
+docker-compose up -d
+```
+
+Access at **http://localhost**
+
+---
+
+## Documentation
+
+📖 **[Complete Documentation](./docs/README.md)**
+
+- [Getting Started](./docs/GETTING_STARTED.md) - Installation and setup
+- [Architecture](./docs/ARCHITECTURE.md) - System design and components
+- [API Reference](./docs/API.md) - Complete endpoint documentation
+- [Configuration](./docs/CONFIGURATION.md) - Environment and settings
+- [Agent Development](./docs/AGENTS.md) - Creating custom strategies
+- [Deployment](./docs/DEPLOYMENT.md) - Production deployment guide
+
+---
+
+## Architecture
+
+```
+Frontend (HTML/CSS/JS) → FastAPI → Agent Manager → RL Agents (DQN/PPO)
+                              ↓           ↓
+                        Market Data  Sentiment
+                        (yfinance)   (FinBERT)
+                              ↓
+                         SQLite DB
+```
+
+See [Architecture Documentation](./docs/ARCHITECTURE.md) for details.
+
+---
+
+## Project Structure
+
+```
+NeuroQuant/
+├── backend/          # FastAPI application
+│   ├── api/         # Routes and endpoints
+│   ├── models/      # Pydantic schemas
+│   └── services/    # Business logic
+├── frontend/        # Web interface
+├── rl/             # RL agents and environment
+├── database/       # SQLite management
+├── utils/          # Logging, exceptions, helpers
+├── tests/          # Test suite
+├── docs/           # Documentation
+├── config.py       # Configuration
+└── requirements.txt
+```
+
+---
+
+## Technology Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Backend | Python 3.11, FastAPI, Uvicorn |
+| ML/RL | PyTorch, Stable-Baselines3, Gymnasium |
+| NLP | Transformers, FinBERT |
+| Data | yfinance, TA-Lib, Pandas, NumPy |
+| Frontend | HTML5, CSS3, JavaScript, Tailwind CSS |
+| Database | SQLite3 |
+| Deployment | Docker, Docker Compose |
+
+---
+
+## Performance Metrics
+
+Calculate comprehensive trading metrics:
+
+- **Risk-Adjusted Returns** - Sharpe Ratio, Sortino Ratio
+- **Drawdown Analysis** - Maximum Drawdown, Calmar Ratio
+- **Trade Statistics** - Win Rate, Profit Factor
+- **Portfolio Tracking** - Equity curves, position sizing
+
+---
+
+## API Endpoints
+
+```
+POST /backtest           - Run backtest simulation
+GET  /agents             - List all agents
+POST /agents             - Create new agent
+GET  /backtest_runs      - Historical results
+POST /upload_dataset     - Upload custom data
+GET  /health             - System status
+```
+
+Interactive docs: **http://localhost:8000/docs**
+
+---
+
+## Contributing
+
+Contributions welcome! Please:
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
+
+---
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+## Contact
+
+**Repository**: [MDhruv03/NeuroQuant](https://github.com/MDhruv03/NeuroQuant)
+
+---
+
+⭐ **Star this repository if you find it helpful!**
 - **FastAPI Backend** with comprehensive API endpoints and Pydantic validation
 - **Advanced RL Agents**: DQN (Deep Q-Network), PPO, and Indicator-Based strategies
 - **Real Sentiment Analysis**: FinBERT integration for market sentiment scoring
@@ -335,43 +492,3 @@ The system calculates comprehensive metrics:
 - Discord bot integration
 - Deep Meta RL (MAML)
 - Advanced risk management
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- [TA-Lib](https://ta-lib.org/) for technical analysis
-- [yfinance](https://github.com/ranaroussi/yfinance) for market data
-- [Stable-Baselines3](https://stable-baselines3.readthedocs.io/) for RL algorithms
-- [FastAPI](https://fastapi.tiangolo.com/) for the web framework
-- [FinBERT](https://huggingface.co/ProsusAI/finbert) for sentiment analysis
-
----
-
-## 📧 Contact
-
-**Project Maintainer**: MDhruv03  
-**Repository**: [https://github.com/MDhruv03/NeuroQuant](https://github.com/MDhruv03/NeuroQuant)
-
----
-
-**⭐ Star this repository if you find it helpful!**
-
