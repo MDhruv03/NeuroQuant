@@ -3,88 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeuroQuant Backtest</title>
+    <title>NeuroQuant Backtest History</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        body {
+            background: #000;
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .mono-card {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            transition: all 0.2s ease;
+        }
+        
+        .mono-card:hover {
+            border-color: #333;
+        }
+
+        .profit {
+            color: #00ff00;
+        }
+        
+        .loss {
+            color: #ff0000;
+        }
+        
+        .border-accent {
+            border-color: #1a1a1a;
+        }
+        
+        .border-accent:hover {
+            border-color: #333;
+        }
+
+        .run-card {
+            cursor: pointer;
+        }
+    </style>
 </head>
-<body class="bg-black text-white font-mono">
-    <div class="container mx-auto p-4">
-        <header class="flex justify-between items-center py-4 border-b border-gray-700">
-            <h1 class="text-2xl font-bold">NeuroQuant</h1>
-            <nav>
-                <ul class="flex space-x-4">
-                    <li><a href="index.html" class="hover:text-gray-400">Dashboard</a></li>
-                    <li><a href="agents.html" class="hover:text-gray-400">Agents</a></li>
-                    <li><a href="backtest.html" class="hover:text-gray-400">Backtest</a></li>
-                </ul>
-            </nav>
-        </header>
+<body>
+    <div class="min-h-screen text-gray-100">
+        <!-- Header -->
+        <div id="header-container"></div>
 
-        <main class="py-8">
-            <h2 class="text-xl font-semibold mb-4">Backtest History</h2>
+        <div class="container mx-auto px-4 py-8">
+            <h2 class="text-4xl font-light mb-8 tracking-wide">BACKTEST HISTORY</h2>
             
-            <section class="mb-8 p-4 bg-gray-900 rounded shadow-lg">
-                <h3 class="text-lg font-medium mb-4">Past Backtest Runs</h3>
-                <div id="backtestRunList" class="space-y-2">
-                    <p class="text-gray-400">Loading backtest runs...</p>
+            <!-- Backtest Runs List -->
+            <section class="mb-8">
+                <div class="mono-card rounded-none p-6 border">
+                    <h3 class="text-xl font-light mb-6 uppercase tracking-wide">
+                        Past Backtest Runs
+                    </h3>
+                    <div id="backtestRunList" class="space-y-3">
+                        <p class="text-gray-400 text-center py-8">Loading backtest runs...</p>
+                    </div>
+                    <div id="backtestListError" class="mt-4 loss hidden"></div>
                 </div>
-                <div id="backtestListError" class="mt-4 text-red-500 hidden"></div>
             </section>
 
+            <!-- Backtest Details -->
             <section id="backtestDetail" class="hidden">
-                <h2 class="text-xl font-semibold mb-4">Backtest Details for <span id="detailSymbol"></span> with <span id="detailAgentName"></span></h2>
-                <p class="text-gray-400 mb-4">Test Period: <span id="detailTestPeriod"></span></p>
+                <div class="mono-card rounded-none p-6 mb-6 border">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-3xl font-light mb-2 tracking-wide">
+                                <span id="detailSymbol" class=""></span> 
+                                <span class="text-gray-500">with</span> 
+                                <span id="detailAgentName" class=""></span>
+                            </h2>
+                            <p class="text-gray-400 text-sm">Test Period: <span id="detailTestPeriod" class="text-white"></span></p>
+                        </div>
+                    </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                    <div class="bg-gray-900 p-4 rounded shadow-lg">
-                        <h3 class="text-lg font-medium">Agent Return</h3>
-                        <p id="detailAgentReturn" class="text-3xl"></p>
-                    </div>
-                    <div class="bg-gray-900 p-4 rounded shadow-lg">
-                        <h3 class="text-lg font-medium">Buy & Hold Return</h3>
-                        <p id="detailBuyHoldReturn" class="text-3xl"></p>
-                    </div>
-                    <div class="bg-gray-900 p-4 rounded shadow-lg">
-                        <h3 class="text-lg font-medium">Outperformance</h3>
-                        <p id="detailOutperformance" class="text-3xl"></p>
-                    </div>
-                    <div class="bg-gray-900 p-4 rounded shadow-lg">
-                        <h3 class="text-lg font-medium">Total Trades</h3>
-                        <p id="detailTotalTrades" class="text-3xl"></p>
-                    </div>
-                    <div class="bg-gray-900 p-4 rounded shadow-lg">
-                        <h3 class="text-lg font-medium">Final Portfolio Value</h3>
-                        <p id="detailFinalValue" class="text-3xl text-green-500"></p>
+                    <!-- Performance Metrics -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+                        <div class="mono-card rounded-none p-4 border border-accent">
+                            <h3 class="text-xs font-light text-gray-400 mb-1 uppercase tracking-wide">Agent Return</h3>
+                            <p id="detailAgentReturn" class="text-2xl font-light">--</p>
+                        </div>
+                        <div class="mono-card rounded-none p-4 border border-accent">
+                            <h3 class="text-xs font-light text-gray-400 mb-1 uppercase tracking-wide">Buy & Hold</h3>
+                            <p id="detailBuyHoldReturn" class="text-2xl font-light">--</p>
+                        </div>
+                        <div class="mono-card rounded-none p-4 border border-accent">
+                            <h3 class="text-xs font-light text-gray-400 mb-1 uppercase tracking-wide">Outperformance</h3>
+                            <p id="detailOutperformance" class="text-2xl font-light">--</p>
+                        </div>
+                        <div class="mono-card rounded-none p-4 border border-accent">
+                            <h3 class="text-xs font-light text-gray-400 mb-1 uppercase tracking-wide">Total Trades</h3>
+                            <p id="detailTotalTrades" class="text-2xl font-light">--</p>
+                        </div>
+                        <div class="mono-card rounded-none p-4 border border-accent">
+                            <h3 class="text-xs font-light text-gray-400 mb-1 uppercase tracking-wide">Final Value</h3>
+                            <p id="detailFinalValue" class="text-2xl font-light">--</p>
+                        </div>
                     </div>
                 </div>
 
-                <h3 class="text-lg font-semibold mb-4">Equity Curve</h3>
-                <div id="detailEquityChartContainer" class="bg-gray-900 p-4 rounded shadow-lg h-64 flex items-center justify-center text-gray-500">
-                    [Chart will be drawn here]
+                <!-- Equity Curve -->
+                <div class="mono-card rounded-none p-6 mb-6 border">
+                    <h3 class="text-xl font-light mb-4 uppercase tracking-wide">
+                        Equity Curve
+                    </h3>
+                    <div id="detailEquityChartContainer" class="h-80 flex items-center justify-center text-gray-500">
+                        [Chart will be drawn here]
+                    </div>
                 </div>
 
-                <h3 class="text-lg font-semibold mb-4 mt-8">Trades</h3>
-                <div class="bg-gray-900 p-4 rounded shadow-lg">
-                    <table class="min-w-full">
-                        <thead>
-                            <tr>
-                                <th class="text-left py-2">Date</th>
-                                <th class="text-left py-2">Type</th>
-                                <th class="text-left py-2">Quantity</th>
-                                <th class="text-left py-2">Price</th>
-                                <th class="text-left py-2">PnL</th>
-                            </tr>
-                        </thead>
-                        <tbody id="detailTradesTableBody">
-                        </tbody>
-                    </table>
+                <!-- Trades Table -->
+                <div class="mono-card rounded-none p-6 border">
+                    <h3 class="text-xl font-light mb-4 uppercase tracking-wide">
+                        Trade History
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-800">
+                                    <th class="text-left py-3 text-sm font-light text-gray-400 uppercase tracking-wide">Date</th>
+                                    <th class="text-left py-3 text-sm font-light text-gray-400 uppercase tracking-wide">Action</th>
+                                    <th class="text-left py-3 text-sm font-light text-gray-400 uppercase tracking-wide">Shares</th>
+                                    <th class="text-left py-3 text-sm font-light text-gray-400 uppercase tracking-wide">Price</th>
+                                    <th class="text-left py-3 text-sm font-light text-gray-400 uppercase tracking-wide">PnL</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailTradesTableBody" class="text-sm">
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
-        </main>
+        </div>
 
-        <footer class="text-center py-4 border-t border-gray-700 mt-8">
-            <p>&copy; 2025 NeuroQuant. All rights reserved.</p>
-        </footer>
+        <!-- Footer -->
+        <div id="footer-container"></div>
     </div>
+    <script src="components.js"></script>
+    <script>
+        NeuroQuantComponents.init('history');
+    </script>
     <script>
         const BACKEND_URL = 'http://localhost:8000'; // Assuming backend runs on this URL
 
@@ -95,9 +159,9 @@
         async function loadBacktestRuns() {
             const runListDiv = document.getElementById('backtestRunList');
             const listErrorDiv = document.getElementById('backtestListError');
-            runListDiv.innerHTML = '<p class="text-gray-400">Loading backtest runs...</p>';
+            runListDiv.innerHTML = '<p class="text-gray-400 text-center py-8">Loading backtest runs...</p>';
             listErrorDiv.classList.add('hidden');
-            document.getElementById('backtestDetail').classList.add('hidden'); // Hide details initially
+            document.getElementById('backtestDetail').classList.add('hidden');
 
             try {
                 const response = await fetch(`${BACKEND_URL}/backtest_runs`);
@@ -106,19 +170,35 @@
                 }
                 const runs = await response.json();
                 
-                runListDiv.innerHTML = ''; // Clear loading message
+                runListDiv.innerHTML = '';
 
                 if (runs.length === 0) {
-                    runListDiv.innerHTML = '<p class="text-gray-400">No backtest runs found yet. Run a backtest from the Dashboard!</p>';
+                    runListDiv.innerHTML = `
+                        <div class="text-center py-12">
+                            <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            <p class="text-gray-400">No backtest runs found yet. Run a backtest from the Dashboard!</p>
+                        </div>
+                    `;
                     return;
                 }
 
                 runs.forEach(run => {
+                    const returnClass = run.agent_return >= 0 ? 'profit' : 'loss';
                     const runItem = document.createElement('div');
-                    runItem.className = 'p-3 border border-gray-700 rounded cursor-pointer hover:bg-gray-800';
+                    runItem.className = 'run-card mono-card p-5 rounded-none border border-accent hover:border-white transition-all';
                     runItem.innerHTML = `
-                        <p class="font-bold">${run.symbol} - ${run.agent_name || 'Default Agent'} - ${run.timestamp.substring(0, 10)}</p>
-                        <p class="text-sm text-gray-400">Return: ${run.agent_return.toFixed(2)}% | Trades: ${run.total_trades}</p>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="text-lg font-light text-white mb-1 uppercase tracking-wide">${run.symbol}</h4>
+                                <p class="text-sm text-gray-400 mb-2">${run.agent_name || 'Default Agent'} • ${run.timestamp.substring(0, 10)}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-2xl font-light ${returnClass}">${run.agent_return >= 0 ? '+' : ''}${run.agent_return.toFixed(2)}%</p>
+                                <p class="text-xs text-gray-500">${run.total_trades} trades</p>
+                            </div>
+                        </div>
                     `;
                     runItem.addEventListener('click', () => showBacktestDetails(run.id));
                     runListDiv.appendChild(runItem);
@@ -126,7 +206,7 @@
 
             } catch (error) {
                 console.error('Error loading backtest runs:', error);
-                runListDiv.innerHTML = ''; // Clear loading message
+                runListDiv.innerHTML = '';
                 listErrorDiv.textContent = `Failed to load backtest runs: ${error.message}`;
                 listErrorDiv.classList.remove('hidden');
             }
@@ -135,8 +215,8 @@
         async function showBacktestDetails(runId) {
             const detailSection = document.getElementById('backtestDetail');
             const listErrorDiv = document.getElementById('backtestListError');
-            detailSection.classList.add('hidden'); // Hide current details
-            listErrorDiv.classList.add('hidden'); // Hide any list errors
+            detailSection.classList.add('hidden');
+            listErrorDiv.classList.add('hidden');
 
             try {
                 const response = await fetch(`${BACKEND_URL}/backtest_runs/${runId}`);
@@ -149,34 +229,47 @@
                 document.getElementById('detailSymbol').textContent = data.symbol;
                 document.getElementById('detailAgentName').textContent = data.agent_name || 'Default Agent';
                 document.getElementById('detailTestPeriod').textContent = data.test_period;
-                document.getElementById('detailAgentReturn').textContent = `${data.agent_return.toFixed(2)}%`;
-                document.getElementById('detailBuyHoldReturn').textContent = `${data.buy_hold_return.toFixed(2)}%`;
-                document.getElementById('detailOutperformance').textContent = `${data.outperformance.toFixed(2)}%`;
+                
+                const agentReturnClass = data.agent_return >= 0 ? 'profit' : 'loss';
+                const buyHoldReturnClass = data.buy_hold_return >= 0 ? 'profit' : 'loss';
+                const outperformanceClass = data.outperformance >= 0 ? 'profit' : 'loss';
+                
+                document.getElementById('detailAgentReturn').textContent = `${data.agent_return >= 0 ? '+' : ''}${data.agent_return.toFixed(2)}%`;
+                document.getElementById('detailAgentReturn').className = `text-2xl font-light ${agentReturnClass}`;
+                
+                document.getElementById('detailBuyHoldReturn').textContent = `${data.buy_hold_return >= 0 ? '+' : ''}${data.buy_hold_return.toFixed(2)}%`;
+                document.getElementById('detailBuyHoldReturn').className = `text-2xl font-light ${buyHoldReturnClass}`;
+                
+                document.getElementById('detailOutperformance').textContent = `${data.outperformance >= 0 ? '+' : ''}${data.outperformance.toFixed(2)}%`;
+                document.getElementById('detailOutperformance').className = `text-2xl font-light ${outperformanceClass}`;
+                
                 document.getElementById('detailTotalTrades').textContent = data.total_trades;
-                document.getElementById('detailFinalValue').textContent = `${data.final_value.toFixed(2)}`;
+                document.getElementById('detailFinalValue').textContent = `$${data.final_value.toFixed(2)}`;
 
                 // Populate trades table
                 const tradesTableBody = document.getElementById('detailTradesTableBody');
                 tradesTableBody.innerHTML = '';
                 data.trades.forEach(trade => {
                     const row = tradesTableBody.insertRow();
+                    row.className = 'border-b border-gray-800 hover:bg-gray-900 transition-colors';
+                    const actionClass = trade.action === 'buy' ? 'profit' : 'loss';
+                    const pnlClass = trade.pnl !== undefined && trade.pnl >= 0 ? 'profit' : 'loss';
                     row.innerHTML = `
-                        <td class="py-2">${trade.date}</td>
-                        <td class="py-2 ${trade.action === 'buy' ? 'text-green-500' : 'text-red-500'}">${trade.action.toUpperCase()}</td>
-                        <td class="py-2">${trade.shares.toFixed(2)}</td>
-                        <td class="py-2">${trade.price.toFixed(2)}</td>
-                        <td class="py-2">${trade.pnl !== undefined ? `${trade.pnl.toFixed(2)}` : '-'}</td>
+                        <td class="py-3">${trade.date}</td>
+                        <td class="py-3 ${actionClass} font-medium uppercase">${trade.action}</td>
+                        <td class="py-3">${trade.shares.toFixed(2)}</td>
+                        <td class="py-3">$${trade.price.toFixed(2)}</td>
+                        <td class="py-3 ${pnlClass} font-medium">${trade.pnl !== undefined ? `$${trade.pnl.toFixed(2)}` : '-'}</td>
                     `;
                 });
 
                 // Draw Equity Curve
-                // Use setTimeout to ensure the container is rendered and has dimensions
                 setTimeout(() => {
-                    console.log('Data for drawEquityCurve:', data.portfolio_history, data.portfolio_dates);
                     drawEquityCurve(data.portfolio_history, data.portfolio_dates, 'detailEquityChartContainer');
-                }, 50); // Small delay
+                }, 50);
 
-                detailSection.classList.remove('hidden'); // Show details
+                detailSection.classList.remove('hidden');
+                detailSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } catch (error) {
                 console.error('Error loading backtest details:', error);
                 listErrorDiv.textContent = `Failed to load details: ${error.message}`;
@@ -186,30 +279,45 @@
 
         // Reusing drawEquityCurve from index.html, adapted for a generic container ID
         function drawEquityCurve(history, dates, containerId) {
-            console.log('drawEquityCurve received:', history, dates, containerId);
             const chartContainer = document.getElementById(containerId);
             chartContainer.innerHTML = ''; // Clear previous chart
 
-            if (history.length < 2) {
-                chartContainer.textContent = 'Not enough data to draw chart.';
+            // Validate input data
+            if (!history || !dates || !Array.isArray(history) || !Array.isArray(dates)) {
+                chartContainer.innerHTML = '<div class="text-center text-gray-400">Invalid chart data.</div>';
+                return;
+            }
+
+            if (history.length < 2 || dates.length < 2) {
+                chartContainer.innerHTML = '<div class="text-center text-gray-400">Not enough data to draw chart.</div>';
                 return;
             }
 
             const width = chartContainer.clientWidth;
             const height = chartContainer.clientHeight;
-            const padding = 40; // Increased padding for labels
+
+            // Validate dimensions
+            if (width <= 0 || height <= 0) {
+                chartContainer.innerHTML = '<div class="text-center text-gray-400">Invalid chart dimensions.</div>';
+                return;
+            }
+
+            const padding = 40;
 
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', width);
             svg.setAttribute('height', height);
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-            svg.setAttribute('preserveAspectRatio', 'none');
+            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
             const minVal = Math.min(...history);
             const maxVal = Math.max(...history);
 
+            // Handle edge case where all values are the same
+            const valueRange = maxVal - minVal || 1;
+
             const xScale = (i) => padding + (i / (history.length - 1)) * (width - 2 * padding);
-            const yScale = (val) => height - padding - ((val - minVal) / (maxVal - minVal)) * (height - 2 * padding);
+            const yScale = (val) => height - padding - ((val - minVal) / valueRange) * (height - 2 * padding);
 
             let pathData = `M ${xScale(0)} ${yScale(history[0])}`;
             for (let i = 1; i < history.length; i++) {
@@ -219,17 +327,17 @@
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             path.setAttribute('d', pathData);
             path.setAttribute('fill', 'none');
-            path.setAttribute('stroke', '#4CAF50'); // Green color for the line
-            path.setAttribute('stroke-width', '2');
+            path.setAttribute('stroke', '#ffffff');
+            path.setAttribute('stroke-width', '1');
             svg.appendChild(path);
 
-            // Add axes (minimalistic)
+            // Add axes
             const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             xAxis.setAttribute('x1', padding);
             xAxis.setAttribute('y1', height - padding);
             xAxis.setAttribute('x2', width - padding);
             xAxis.setAttribute('y2', height - padding);
-            xAxis.setAttribute('stroke', '#555');
+            xAxis.setAttribute('stroke', '#1a1a1a');
             svg.appendChild(xAxis);
 
             const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -237,40 +345,40 @@
             yAxis.setAttribute('y1', padding);
             yAxis.setAttribute('x2', padding);
             yAxis.setAttribute('y2', height - padding);
-            yAxis.setAttribute('stroke', '#555');
+            yAxis.setAttribute('stroke', '#1a1a1a');
             svg.appendChild(yAxis);
 
-            // Add Y-axis labels (min and max values)
+            // Add Y-axis labels
             const yMinLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             yMinLabel.setAttribute('x', padding - 5);
             yMinLabel.setAttribute('y', yScale(minVal) + 5);
-            yMinLabel.setAttribute('fill', 'white');
+            yMinLabel.setAttribute('fill', '#333333');
             yMinLabel.setAttribute('text-anchor', 'end');
             yMinLabel.setAttribute('font-size', '10');
-            yMinLabel.textContent = `${minVal.toFixed(2)}`;
+            yMinLabel.textContent = `$${minVal.toFixed(0)}`;
             svg.appendChild(yMinLabel);
 
             const yMaxLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             yMaxLabel.setAttribute('x', padding - 5);
-            yMaxLabel.setAttribute('y', yScale(maxVal) - 5);
-            yMaxLabel.setAttribute('fill', 'white');
+            yMaxLabel.setAttribute('y', yScale(maxVal) + 5);
+            yMaxLabel.setAttribute('fill', '#333333');
             yMaxLabel.setAttribute('text-anchor', 'end');
             yMaxLabel.setAttribute('font-size', '10');
-            yMaxLabel.textContent = `${maxVal.toFixed(2)}`;
+            yMaxLabel.textContent = `$${maxVal.toFixed(0)}`;
             svg.appendChild(yMaxLabel);
 
             // Add X-axis labels
-            const numLabels = 5; // Number of labels to display
+            const numLabels = Math.min(5, dates.length);
             for (let i = 0; i < numLabels; i++) {
                 const index = Math.floor(i * (dates.length - 1) / (numLabels - 1));
                 const x = xScale(index);
                 const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 dateLabel.setAttribute('x', x);
                 dateLabel.setAttribute('y', height - padding + 15);
-                dateLabel.setAttribute('fill', 'white');
+                dateLabel.setAttribute('fill', '#333333');
                 dateLabel.setAttribute('text-anchor', 'middle');
                 dateLabel.setAttribute('font-size', '10');
-                dateLabel.textContent = dates[index];
+                dateLabel.textContent = dates[index] || '';
                 svg.appendChild(dateLabel);
             }
 

@@ -5,134 +5,270 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NeuroQuant Trading Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        body {
+            background: #000000;
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        
+        .mono-card {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            transition: all 0.2s ease;
+        }
+        
+        .mono-card:hover {
+            border-color: #333333;
+            transform: translateY(-1px);
+        }
+        
+        .btn-mono {
+            background: #ffffff;
+            color: #000000;
+            border: 1px solid #ffffff;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .btn-mono:hover {
+            background: #000000;
+            color: #ffffff;
+        }
+        
+        .profit {
+            color: #00ff00;
+        }
+        
+        .loss {
+            color: #ff0000;
+        }
+        
+        .neutral {
+            color: #888888;
+        }
+        
+        .border-accent {
+            border-left: 2px solid #ffffff;
+        }
+        
+        .loading-spinner {
+            border: 2px solid #1a1a1a;
+            border-top: 2px solid #ffffff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        input, select, textarea {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #ffffff;
+        }
+        
+        input::placeholder {
+            color: #333333;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #1a1a1a;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #333333;
+        }
+        
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        th {
+            color: #888888;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+    </style>
 </head>
-<body class="bg-black text-white font-mono">
-    <div class="container mx-auto p-4">
-        <header class="flex justify-between items-center py-4 border-b border-gray-700">
-            <h1 class="text-2xl font-bold">NeuroQuant - Agentic AI Hedge Fund</h1>
-            <nav>
-                <ul class="flex space-x-4">
-                    <li><a href="index.html" class="hover:text-gray-400">Dashboard</a></li>
-                    <li><a href="agents.html" class="hover:text-gray-400">Agents</a></li>
-                    <li><a href="backtest.html" class="hover:text-gray-400">Backtest</a></li>
-                </ul>
-            </nav>
-        </header>
+<body>
+    <div class="min-h-screen text-gray-100">
+        <!-- Header -->
+        <div id="header-container"></div>
 
-        <section class="py-4 border-b border-gray-700 mb-8">
-            <h2 class="text-xl font-semibold mb-4">Run Backtest</h2>
-            
-            <div class="mb-4 p-4 bg-gray-900 rounded shadow-lg">
-                <h3 class="text-lg font-medium mb-2">Upload Custom Dataset</h3>
-                <form id="uploadDatasetForm" class="space-y-4">
-                    <div>
-                        <label for="datasetName" class="block text-gray-400 text-sm font-bold mb-2">Dataset Name:</label>
-                        <input type="text" id="datasetName" name="datasetName" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600" required>
-                    </div>
-                    <div>
-                        <label for="datasetDescription" class="block text-gray-400 text-sm font-bold mb-2">Description (Optional):</label>
-                        <input type="text" id="datasetDescription" name="datasetDescription" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600">
-                    </div>
-                    <div>
-                        <label for="datasetFile" class="block text-gray-400 text-sm font-bold mb-2">CSV File:</label>
-                        <input type="file" id="datasetFile" name="datasetFile" accept=".csv" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600" required>
-                    </div>
-                    <button type="submit" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Upload Dataset</button>
-                    <div id="uploadMessage" class="mt-4 text-green-500 hidden"></div>
-                    <div id="uploadError" class="mt-4 text-red-500 hidden"></div>
-                </form>
-            </div>
+        <div class="container mx-auto px-8 py-12">
+            <!-- Run Backtest Section -->
+            <section class="mb-16">
+                <h2 class="text-2xl font-medium mb-8 tracking-tight">RUN BACKTEST</h2>
+                
+                <!-- Upload Dataset Card -->
+                <div class="mono-card rounded p-8 mb-6">
+                    <h3 class="text-sm font-medium mb-6 tracking-wide text-gray-400">[ UPLOAD DATASET ]</h3>
+                    <form id="uploadDatasetForm" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Name</label>
+                                <input type="text" id="datasetName" 
+                                    class="w-full px-4 py-3 rounded text-sm" 
+                                    placeholder="dataset_name" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Description</label>
+                                <input type="text" id="datasetDescription" 
+                                    class="w-full px-4 py-3 rounded text-sm" 
+                                    placeholder="optional">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">File</label>
+                            <input type="file" id="datasetFile" accept=".csv" 
+                                class="w-full px-4 py-3 rounded text-sm" required>
+                        </div>
+                        <button type="submit" class="btn-mono px-8 py-3 rounded text-sm tracking-wide">
+                            UPLOAD
+                        </button>
+                        <div id="uploadMessage" class="text-sm profit hidden"></div>
+                        <div id="uploadError" class="text-sm loss hidden"></div>
+                    </form>
+                </div>
 
-            <form id="backtestForm" class="flex flex-wrap gap-4 items-end">
-                <div class="flex-grow">
-                    <label for="dataSource" class="block text-gray-400 text-sm font-bold mb-2">Data Source:</label>
-                    <select id="dataSource" name="dataSource" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600">
-                        <option value="yfinance">Yahoo Finance</option>
-                        <option value="custom">Custom Dataset</option>
-                    </select>
+                <!-- Backtest Configuration Card -->
+                <div class="mono-card rounded p-8">
+                    <h3 class="text-sm font-medium mb-6 tracking-wide text-gray-400">[ CONFIGURE ]</h3>
+                    <form id="backtestForm" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Source</label>
+                                <select id="dataSource" class="w-full px-4 py-3 rounded text-sm">
+                                    <option value="yfinance">Yahoo Finance</option>
+                                    <option value="custom">Custom Dataset</option>
+                                </select>
+                            </div>
+                            <div id="yfinanceSymbolDiv">
+                                <label class="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Symbol</label>
+                                <select id="symbol" class="w-full px-4 py-3 rounded text-sm">
+                                </select>
+                            </div>
+                            <div class="hidden" id="customDatasetDiv">
+                                <label class="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Dataset</label>
+                                <select id="customDatasetSelect" class="w-full px-4 py-3 rounded text-sm">
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Agent</label>
+                                <select id="agentSelect" class="w-full px-4 py-3 rounded text-sm">
+                                    <option value="">Default</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Train Split</label>
+                                <input type="number" id="trainSplit" value="70" min="10" max="90" 
+                                    class="w-full px-4 py-3 rounded text-sm">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-mono px-8 py-3 rounded text-sm tracking-wide">
+                            EXECUTE
+                        </button>
+                    </form>
+                    <div id="loadingIndicator" class="mt-8 flex items-center space-x-4 hidden">
+                        <div class="loading-spinner"></div>
+                        <span class="text-sm text-gray-500">PROCESSING...</span>
+                    </div>
+                    <div id="errorMessage" class="mt-6 text-sm loss hidden"></div>
                 </div>
-                <div class="flex-grow" id="yfinanceSymbolDiv">
-                    <label for="symbol" class="block text-gray-400 text-sm font-bold mb-2">Select Symbol:</label>
-                    <select id="symbol" name="symbol" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600">
-                        <!-- YFinance Symbols will be loaded here by JavaScript -->
-                    </select>
-                </div>
-                <div class="flex-grow hidden" id="customDatasetDiv">
-                    <label for="customDatasetSelect" class="block text-gray-400 text-sm font-bold mb-2">Select Custom Dataset:</label>
-                    <select id="customDatasetSelect" name="customDatasetSelect" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600">
-                        <!-- Custom Datasets will be loaded here by JavaScript -->
-                    </select>
-                </div>
-                <div class="flex-grow">
-                    <label for="agentSelect" class="block text-gray-400 text-sm font-bold mb-2">Select Agent:</label>
-                    <select id="agentSelect" name="agentSelect" class="bg-gray-800 text-white p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-gray-600">
-                        <option value="">Default Agent</option>
-                        <!-- Agents will be loaded here by JavaScript -->
-                    </select>
-                </div>
-                <div class="flex-grow">
-                    <label for="trainSplit" class="block text-gray-400 text-sm font-bold mb-2">Train Split (%):</label>
-                    <input type="number" id="trainSplit" name="trainSplit" value="70" min="10" max="90" class="bg-gray-800 text-white p-2 rounded w-20 focus:outline-none focus:ring-2 focus:ring-gray-600">
-                </div>
-                <button type="submit" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Run Backtest</button>
-            </form>
-            <div id="loadingIndicator" class="mt-4 text-gray-400 hidden">Running backtest... Please wait.</div>
-            <div id="errorMessage" class="mt-4 text-red-500 hidden"></div>
-        </section>
+            </section>
 
-        <main class="py-8">
-            <section class="mb-8">
-                <h2 class="text-xl font-semibold mb-4">Overall Performance</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-gray-900 p-4 rounded shadow-lg">
-                        <h3 class="text-lg font-medium">Total PnL</h3>
-                        <p id="totalPnl" class="text-3xl text-green-500"></p>
+            <!-- Performance Metrics -->
+            <section class="mb-16">
+                <h2 class="text-2xl font-medium mb-8 tracking-tight">PERFORMANCE</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="mono-card border-accent rounded p-6">
+                        <div class="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Total PnL</div>
+                        <p id="totalPnl" class="text-4xl font-light tracking-tight">--</p>
                     </div>
-                    <div class="bg-gray-900 p-4 rounded shadow-lg">
-                        <h3 class="text-lg font-medium">Agent Return</h3>
-                        <p id="agentReturn" class="text-3xl"></p>
+                    <div class="mono-card border-accent rounded p-6">
+                        <div class="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Agent Return</div>
+                        <p id="agentReturn" class="text-4xl font-light tracking-tight">--</p>
                     </div>
-                    <div class="bg-gray-900 p-4 rounded shadow-lg">
-                        <h3 class="text-lg font-medium">Total Trades</h3>
-                        <p id="totalTrades" class="text-3xl"></p>
+                    <div class="mono-card border-accent rounded p-6">
+                        <div class="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Total Trades</div>
+                        <p id="totalTrades" class="text-4xl font-light tracking-tight text-white">--</p>
                     </div>
                 </div>
             </section>
 
-            <section class="mb-8">
-                <h2 class="text-xl font-semibold mb-4">Recent Trades</h2>
-                <div class="bg-gray-900 p-4 rounded shadow-lg">
-                    <table class="min-w-full">
+            <!-- Recent Trades -->
+            <section class="mb-16">
+                <h2 class="text-2xl font-medium mb-8 tracking-tight">RECENT TRADES</h2>
+                <div class="mono-card rounded p-8 overflow-x-auto">
+                    <table class="w-full text-sm">
                         <thead>
-                            <tr>
-                                <th class="text-left py-2">Symbol</th>
-                                <th class="text-left py-2">Type</th>
-                                <th class="text-left py-2">Quantity</th>
-                                <th class="text-left py-2">Entry Price</th>
-                                <th class="text-left py-2">Exit Price</th>
-                                <th class="text-left py-2">PnL</th>
+                            <tr class="border-b border-gray-900">
+                                <th class="text-left py-4">DATE</th>
+                                <th class="text-left py-4">ACTION</th>
+                                <th class="text-left py-4">SHARES</th>
+                                <th class="text-left py-4">PRICE</th>
+                                <th class="text-left py-4">PNL</th>
                             </tr>
                         </thead>
-                        <tbody id="recentTradesTableBody">
+                        <tbody id="recentTradesTableBody" class="text-sm">
                         </tbody>
                     </table>
                 </div>
             </section>
 
+            <!-- Equity Curve -->
             <section>
-                <h2 class="text-xl font-semibold mb-4">Equity Curve (Placeholder)</h2>
-                <div id="equityChartContainer" class="bg-gray-900 p-4 rounded shadow-lg h-64 flex items-center justify-center text-gray-500">
-                    [Chart will be drawn here]
+                <h2 class="text-2xl font-medium mb-8 tracking-tight">EQUITY CURVE</h2>
+                <div class="mono-card rounded p-8">
+                    <div id="equityChartContainer" class="h-80 flex items-center justify-center text-gray-700">
+                        <div class="text-center">
+                            <div class="w-12 h-12 border border-gray-900 mx-auto mb-4"></div>
+                            <p class="text-sm tracking-wide">NO DATA</p>
+                        </div>
+                    </div>
                 </div>
             </section>
-        </main>
+        </div>
 
-        <footer class="text-center py-4 border-t border-gray-700 mt-8">
-            <p>&copy; 2025 NeuroQuant. All rights reserved.</p>
-        </footer>
+        <!-- Footer -->
+        <div id="footer-container"></div>
     </div>
+    <script src="components.js"></script>
     <script>
-        const BACKEND_URL = 'http://127.0.0.1:8000'; // Assuming backend runs on this URL
+        NeuroQuantComponents.init('dashboard');
+    </script>
+    <script>
+        const BACKEND_URL = 'http://localhost:8000'; // Assuming backend runs on this URL
 
         document.addEventListener('DOMContentLoaded', () => {
             loadInitialData(); // Load symbols and agents
@@ -349,27 +485,35 @@
             }
         }
         function updateDashboard(data) {
-            document.getElementById('totalPnl').textContent = `${data.agent_return.toFixed(2)}%`; // Assuming agent_return is PnL
-            document.getElementById('agentReturn').textContent = `${data.agent_return.toFixed(2)}%`;
+            const returnClass = data.agent_return >= 0 ? 'profit' : 'loss';
+            document.getElementById('totalPnl').textContent = `${data.agent_return >= 0 ? '+' : ''}${data.agent_return.toFixed(2)}%`;
+            document.getElementById('totalPnl').className = `text-4xl font-light tracking-tight ${returnClass}`;
+            
+            document.getElementById('agentReturn').textContent = `${data.agent_return >= 0 ? '+' : ''}${data.agent_return.toFixed(2)}%`;
+            document.getElementById('agentReturn').className = `text-4xl font-light tracking-tight ${returnClass}`;
+            
             document.getElementById('totalTrades').textContent = data.total_trades;
 
             const tradesTableBody = document.getElementById('recentTradesTableBody');
             tradesTableBody.innerHTML = '';
             data.trades.forEach(trade => {
                 const row = tradesTableBody.insertRow();
+                row.className = 'border-b border-gray-900 hover:bg-black transition-colors';
+                const actionClass = trade.action === 'buy' ? 'profit' : 'loss';
+                const pnlClass = trade.pnl !== undefined && trade.pnl >= 0 ? 'profit' : 'loss';
                 row.innerHTML = `
-                    <td class="py-2">${trade.date}</td>
-                    <td class="py-2 ${trade.action === 'buy' ? 'text-green-500' : 'text-red-500'}">${trade.action.toUpperCase()}</td>
-                    <td class="py-2">${trade.shares.toFixed(2)}</td>
-                    <td class="py-2">${trade.price.toFixed(2)}</td>
-                    <td class="py-2">${trade.pnl !== undefined ? `${trade.pnl.toFixed(2)}` : '-'}</td>
+                    <td class="py-4">${trade.date}</td>
+                    <td class="py-4 ${actionClass} font-medium">${trade.action.toUpperCase()}</td>
+                    <td class="py-4">${trade.shares.toFixed(2)}</td>
+                    <td class="py-4">$${trade.price.toFixed(2)}</td>
+                    <td class="py-4 ${pnlClass} font-medium">${trade.pnl !== undefined ? `${trade.pnl >= 0 ? '+' : ''}$${trade.pnl.toFixed(2)}` : '--'}</td>
                 `;
             });
 
             // Draw Equity Curve
             setTimeout(() => {
                 drawEquityCurve(data.portfolio_history, data.portfolio_dates, 'equityChartContainer');
-            }, 50); // Small delay
+            }, 50);
         }
 
         // Reusing drawEquityCurve from backtest.html, adapted for a generic container ID
@@ -377,26 +521,49 @@
             const chartContainer = document.getElementById(containerId);
             chartContainer.innerHTML = ''; // Clear previous chart
 
-            if (history.length < 2) {
-                chartContainer.textContent = 'Not enough data to draw chart.';
+            // Validate input data
+            if (!history || !dates || !Array.isArray(history) || !Array.isArray(dates)) {
+                chartContainer.innerHTML = `
+                    <div class="text-center">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <p>Run a backtest to see the equity curve</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (history.length < 2 || dates.length < 2) {
+                chartContainer.innerHTML = '<div class="text-center text-gray-400">Not enough data to draw chart.</div>';
                 return;
             }
 
             const width = chartContainer.clientWidth;
             const height = chartContainer.clientHeight;
-            const padding = 40; // Increased padding for labels
+
+            // Validate dimensions
+            if (width <= 0 || height <= 0) {
+                chartContainer.innerHTML = '<div class="text-center text-gray-400">Invalid chart dimensions.</div>';
+                return;
+            }
+
+            const padding = 40;
 
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', width);
             svg.setAttribute('height', height);
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-            svg.setAttribute('preserveAspectRatio', 'none');
+            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
             const minVal = Math.min(...history);
             const maxVal = Math.max(...history);
 
+            // Handle edge case where all values are the same
+            const valueRange = maxVal - minVal || 1;
+
             const xScale = (i) => padding + (i / (history.length - 1)) * (width - 2 * padding);
-            const yScale = (val) => height - padding - ((val - minVal) / (maxVal - minVal)) * (height - 2 * padding);
+            const yScale = (val) => height - padding - ((val - minVal) / valueRange) * (height - 2 * padding);
 
             let pathData = `M ${xScale(0)} ${yScale(history[0])}`;
             for (let i = 1; i < history.length; i++) {
@@ -406,17 +573,17 @@
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             path.setAttribute('d', pathData);
             path.setAttribute('fill', 'none');
-            path.setAttribute('stroke', '#4CAF50'); // Green color for the line
-            path.setAttribute('stroke-width', '2');
+            path.setAttribute('stroke', '#ffffff');
+            path.setAttribute('stroke-width', '1');
             svg.appendChild(path);
 
-            // Add axes (minimalistic)
+            // Add axes
             const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             xAxis.setAttribute('x1', padding);
             xAxis.setAttribute('y1', height - padding);
             xAxis.setAttribute('x2', width - padding);
             xAxis.setAttribute('y2', height - padding);
-            xAxis.setAttribute('stroke', '#555');
+            xAxis.setAttribute('stroke', '#1a1a1a');
             svg.appendChild(xAxis);
 
             const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -424,40 +591,40 @@
             yAxis.setAttribute('y1', padding);
             yAxis.setAttribute('x2', padding);
             yAxis.setAttribute('y2', height - padding);
-            yAxis.setAttribute('stroke', '#555');
+            yAxis.setAttribute('stroke', '#1a1a1a');
             svg.appendChild(yAxis);
 
-            // Add Y-axis labels (min and max values)
+            // Add Y-axis labels
             const yMinLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             yMinLabel.setAttribute('x', padding - 5);
             yMinLabel.setAttribute('y', yScale(minVal) + 5);
-            yMinLabel.setAttribute('fill', 'white');
+            yMinLabel.setAttribute('fill', '#333333');
             yMinLabel.setAttribute('text-anchor', 'end');
             yMinLabel.setAttribute('font-size', '10');
-            yMinLabel.textContent = `${minVal.toFixed(2)}`;
+            yMinLabel.textContent = `$${minVal.toFixed(0)}`;
             svg.appendChild(yMinLabel);
 
             const yMaxLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             yMaxLabel.setAttribute('x', padding - 5);
-            yMaxLabel.setAttribute('y', yScale(maxVal) - 5);
-            yMaxLabel.setAttribute('fill', 'white');
+            yMaxLabel.setAttribute('y', yScale(maxVal) + 5);
+            yMaxLabel.setAttribute('fill', '#333333');
             yMaxLabel.setAttribute('text-anchor', 'end');
             yMaxLabel.setAttribute('font-size', '10');
-            yMaxLabel.textContent = `${maxVal.toFixed(2)}`;
+            yMaxLabel.textContent = `$${maxVal.toFixed(0)}`;
             svg.appendChild(yMaxLabel);
 
             // Add X-axis labels
-            const numLabels = 5; // Number of labels to display
+            const numLabels = Math.min(5, dates.length);
             for (let i = 0; i < numLabels; i++) {
                 const index = Math.floor(i * (dates.length - 1) / (numLabels - 1));
                 const x = xScale(index);
                 const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 dateLabel.setAttribute('x', x);
                 dateLabel.setAttribute('y', height - padding + 15);
-                dateLabel.setAttribute('fill', 'white');
+                dateLabel.setAttribute('fill', '#333333');
                 dateLabel.setAttribute('text-anchor', 'middle');
                 dateLabel.setAttribute('font-size', '10');
-                dateLabel.textContent = dates[index];
+                dateLabel.textContent = dates[index] || '';
                 svg.appendChild(dateLabel);
             }
 

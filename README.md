@@ -1,123 +1,377 @@
-# 📈 Stock RL Trading
+# 📈 NeuroQuant - Advanced RL Trading System
 
-An experimental **Reinforcement Learning + FastAPI** project that simulates an autonomous trading system.  
-The project integrates **market data fetching, RL-based agents, sentiment analysis, and backtesting** into a modular backend, exposing everything via APIs.
+An advanced **Reinforcement Learning + FastAPI** autonomous trading system that integrates **market data fetching, RL-based agents, sentiment analysis, and comprehensive backtesting** into a production-ready, modular architecture.
 
 ---
 
 ## 🚀 Features
 
-- **FastAPI Backend** with modular routing (`/data`, `/agent`, `/backtest`)
-- **RL Trading Agent** implemented in PyTorch
-- **Market Data Fetcher** (via `yfinance`) for live & historical OHLCV data
-- **Backtesting Engine** to simulate trading strategies
-- **Sentiment Analysis** pipeline (e.g., FinBERT / HuggingFace transformers)
-- **Interactive Frontend** (HTML + CSS templates, extendable with React)
-- **Unit Tests** to validate functionality
+### Core Capabilities
+- **FastAPI Backend** with comprehensive API endpoints and Pydantic validation
+- **Advanced RL Agents**: DQN (Deep Q-Network), PPO, and Indicator-Based strategies
+- **Real Sentiment Analysis**: FinBERT integration for market sentiment scoring
+- **Technical Analysis**: 20+ indicators via TA-Lib (SMA, RSI, MACD, Bollinger Bands, etc.)
+- **Comprehensive Backtesting**: Detailed performance metrics and trade analysis
+- **Interactive Web Dashboard**: Real-time visualization and agent management
+- **Data Caching**: Optimized performance with Redis support
+- **Robust Error Handling**: Custom exceptions and structured logging
+- **Docker Support**: Fully containerized deployment
 
-⚙️ **Phase 1: MVP (Minimal Viable Project)** — _Get a working prototype up fast_
---------------------------------------------------------------------------------
+### Performance Metrics
+- Sharpe Ratio & Sortino Ratio
+- Maximum Drawdown & Calmar Ratio
+- Win Rate & Profit Factor
+- Portfolio value tracking with equity curves
 
-### 🎯 Goal:
+---
 
-Build a basic system where one RL-based agent trades a small selection of stocks based on technical indicators and market sentiment.
+## �️ Architecture
 
-### ✅ Features:
+```
+NeuroQuant/
+├── backend/              # FastAPI application
+│   ├── api/             # API routes and endpoints
+│   ├── models/          # Pydantic data models
+│   ├── services/        # Business logic services
+│   │   ├── market_data.py
+│   │   ├── trading_agent.py
+│   │   ├── agent_manager.py
+│   │   └── sentiment_analysis.py
+│   └── main.py         # Application entry point
+├── database/           # SQLite database management
+├── frontend/           # HTML/CSS/JS web interface
+├── rl/                # Reinforcement learning agents
+│   ├── agent.py       # Base agent classes
+│   ├── dqn_agent.py   # Deep Q-Network implementation
+│   ├── environment.py  # Trading environment
+│   └── train.py       # Training scripts
+├── utils/             # Utilities and helpers
+│   ├── logging_config.py
+│   ├── exceptions.py
+│   └── helpers.py
+├── tests/             # Comprehensive test suite
+├── config.py          # Centralized configuration
+├── requirements.txt   # Python dependencies
+├── Dockerfile        # Docker container definition
+└── docker-compose.yml # Multi-service orchestration
+```
 
-*   Use yfinance to pull historical OHLCV data.
-    
-*   Build a simple RL agent (start with DQN) that trades on a single stock (e.g., AAPL).
-    
-*   Scrape or load headlines + use a pretrained sentiment classifier (VADER or FinBERT) to label them.
-    
-*   Combine **technical indicator signals + sentiment score** into one state vector for the agent.
-    
-*   Backtest the agent using a backtesting library (like Backtrader).
-    
-*   Build a **Flask backend** with endpoints to run and display results (PnL, trades, etc.).
-    
-*   Use basic HTML/CSS or simple React for a visual dashboard.
-    
+---
 
-### 📚 Tech Stack:
+## 📋 Installation
 
-*   Python, Flask
-    
-*   PyTorch + FinBERT
-    
-*   yfinance, TA-lib (for indicators)
-    
-*   Backtrader
-    
-*   SQLite or PostgreSQL for data storage
-    
+### Prerequisites
+- Python 3.11+
+- TA-Lib library (system-level installation required)
+- Redis (optional, for caching)
+- Docker & Docker Compose (for containerized deployment)
 
-🚀 **Phase 2: Competitive Agents + Strategy DNA**
--------------------------------------------------
+### System Dependencies
 
-### 🎯 Goal:
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install -y libta-lib-dev build-essential
+```
 
-Turn the single agent into **multiple agents**, each with its own strategy style and a simple genetic evolution loop.
+**macOS:**
+```bash
+brew install ta-lib
+```
 
-### ✅ Features:
+**Windows:**
+Download from [https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib](https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib)
 
-*   Multiple agents running in parallel, each with different hyperparams (risk, buy/sell thresholds).
-    
-*   Track agent performance across simulations.
-    
-*   Implement a simple **evolution engine**: Top X agents breed new strategies by mutating their parameters.
-    
-*   Store all agent stats in your PostgreSQL DB.
-    
-*   Add graphs to the dashboard: strategy evolution tree, Sharpe over generations, etc.
-    
+### Python Installation
 
-🧠 **Phase 3: NLP Brain + Market Regime Detection**
----------------------------------------------------
+1. **Clone the repository:**
+```bash
+git clone https://github.com/MDhruv03/NeuroQuant.git
+cd NeuroQuant
+```
 
-### 🎯 Goal:
+2. **Create virtual environment:**
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
-Make the system smarter by understanding _when_ different strategies work best.
+3. **Install dependencies:**
+```bash
+pip install -r requirements.txt
+```
 
-### ✅ Features:
+4. **Configure environment:**
+```bash
+cp .env.example .env
+# Edit .env with your settings
+```
 
-*   Implement **market regime detection** using clustering (KMeans/DBSCAN) on volatility, trend, and volume data.
-    
-*   Train the agent to adapt or switch strategies based on the current regime.
-    
-*   Use an LLM (e.g., fine-tuned BERT or GPT-2) to extract themes from news (e.g., "rate hike", "tech rally", etc.).
-    
-*   Add topic modeling or zero-shot classification on top of the sentiment engine.
-    
+5. **Initialize database:**
+```bash
+python -c "from database.database import create_db_and_tables; create_db_and_tables()"
+```
 
-🧬 **Phase 4: The Full Arena + SaaS-ready Architecture**
---------------------------------------------------------
+---
 
-### 🎯 Goal:
+## 🐳 Docker Deployment
 
-Turn it into a microservice-based platform for people to create, test, and evolve their own agents.
+### Quick Start with Docker Compose
 
-### ✅ Features:
+```bash
+# Build and start all services
+docker-compose up -d
 
-*   FastAPI/Flask + Celery + Redis + Dockerized microservices.
-    
-*   Let users log in, create/edit agents (via form or YAML config).
-    
-*   Run simulations async and serve back results via WebSockets or polling.
-    
-*   Build a React frontend with slick Tailwind UI.
-    
-*   Make it multi-stock capable with portfolio allocation logic.
-    
+# View logs
+docker-compose logs -f
 
-🔮 **Stretch Goals:**
----------------------
+# Stop services
+docker-compose down
+```
 
-*   Add **real-time paper trading** with Alpaca/Interactive Brokers API.
+This will start:
+- **NeuroQuant API** on `http://localhost:8000`
+- **Frontend** on `http://localhost:80`
+- **Redis Cache** on `localhost:6379`
+
+### Manual Docker Build
+
+```bash
+# Build image
+docker build -t neuroquant:latest .
+
+# Run container
+docker run -d -p 8000:8000 --name neuroquant neuroquant:latest
+```
+
+---
+
+## 🎮 Usage
+
+### Starting the Application
+
+**Development mode:**
+```bash
+python backend/main.py
+```
+
+**Production mode:**
+```bash
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+### API Endpoints
+
+Access the interactive API documentation:
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+
+#### Key Endpoints:
+
+- `POST /backtest` - Run backtest simulation
+- `GET /agents` - List all trading agents
+- `POST /agents` - Create new agent
+- `GET /backtest_runs` - Historical backtest results
+- `POST /upload_dataset` - Upload custom CSV dataset
+- `GET /symbols` - Available trading symbols
+- `GET /health` - System health check
+
+### Web Interface
+
+Open `http://localhost:8000` (or `http://localhost` with Docker) to access:
+- **Dashboard**: Run backtests and view results
+- **Agents**: Create and manage trading agents
+- **Backtest History**: Analyze past performance
+
+---
+
+## � Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=. --cov-report=html
+
+# Run specific test file
+pytest tests/test_helpers.py -v
+```
+
+---
+
+## ⚙️ Configuration
+
+Edit `.env` file or `config.py` to customize:
+
+### RL Hyperparameters
+```env
+LEARNING_RATE=0.0003
+GAMMA=0.99
+EPSILON_START=1.0
+EPSILON_END=0.01
+BATCH_SIZE=64
+```
+
+### Financial Settings
+```env
+INITIAL_PORTFOLIO=10000
+TRANSACTION_COST=0.001
+SLIPPAGE=0.0005
+```
+
+### Sentiment Analysis
+```env
+SENTIMENT_ENABLED=true
+SENTIMENT_MODEL=ProsusAI/finbert
+NEWS_API_KEY=your_key_here
+FINNHUB_API_KEY=your_key_here
+```
+
+### Caching & Performance
+```env
+REDIS_ENABLED=true
+DATA_CACHE_ENABLED=true
+DATA_CACHE_TTL=3600
+```
+
+---
+
+## 🤖 Creating Custom Agents
+
+```python
+from rl.agent import Agent
+import numpy as np
+
+class CustomAgent(Agent):
+    def __init__(self, env):
+        super().__init__(env)
+        # Your initialization
     
-*   Build a **leaderboard of best user-submitted agents**.
+    def train(self, timesteps=10000):
+        # Your training logic
+        pass
     
-*   Add a Discord bot to get live updates from your hedge fund simulator.
-    
-*   Train one agent using **Deep Meta Reinforcement Learning** (like MAML).
+    def predict(self, obs):
+        # Your prediction logic
+        action = np.random.randint(0, 3)  # 0=Hold, 1=Buy, 2=Sell
+        return action, None
+```
+
+Register via API:
+```bash
+curl -X POST "http://localhost:8000/agents" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Custom Agent",
+    "type": "Custom",
+    "parameters": {"param1": "value1"}
+  }'
+```
+
+---
+
+## 📊 Performance Metrics
+
+The system calculates comprehensive metrics:
+
+- **Sharpe Ratio**: Risk-adjusted returns
+- **Sortino Ratio**: Downside risk-adjusted returns
+- **Maximum Drawdown**: Largest peak-to-trough decline
+- **Calmar Ratio**: Return vs. max drawdown
+- **Win Rate**: Percentage of profitable trades
+- **Profit Factor**: Gross profits / gross losses
+
+---
+
+## 🔐 Security & Production
+
+### API Security
+- Rate limiting enabled by default
+- CORS configured for specific origins
+- Input validation with Pydantic models
+- Structured error handling
+
+### Logging
+- Rotating file handlers (10MB per file, 5 backups)
+- Colored console output
+- Configurable log levels
+- Structured logging format
+
+---
+
+## 🛣️ Roadmap
+
+### ✅ Phase 1: MVP (Complete)
+- Basic RL agent implementation (DQN/PPO)
+- Technical indicator integration
+- FastAPI backend with comprehensive endpoints
+- SQLite database for persistence
+- Interactive web dashboard
+- Backtesting engine with multiple data sources
+
+### 🚧 Phase 2: Competitive Agents (In Progress)
+- Multiple agents running in parallel
+- Genetic evolution of strategies
+- Performance tracking and comparison
+- Strategy evolution visualization
+
+### 📋 Phase 3: NLP & Market Intelligence
+- Market regime detection (clustering)
+- Adaptive strategy switching
+- LLM-based news theme extraction
+- Topic modeling and zero-shot classification
+
+### 🔮 Phase 4: Production SaaS
+- Microservices architecture (FastAPI + Celery + Redis)
+- User authentication and multi-tenancy
+- Async simulation with WebSockets
+- Modern frontend with React/Vue
+- Multi-stock portfolio allocation
+
+### 🎯 Stretch Goals
+- Real-time paper trading (Alpaca/Interactive Brokers)
+- Agent leaderboard system
+- Discord bot integration
+- Deep Meta RL (MAML)
+- Advanced risk management
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- [TA-Lib](https://ta-lib.org/) for technical analysis
+- [yfinance](https://github.com/ranaroussi/yfinance) for market data
+- [Stable-Baselines3](https://stable-baselines3.readthedocs.io/) for RL algorithms
+- [FastAPI](https://fastapi.tiangolo.com/) for the web framework
+- [FinBERT](https://huggingface.co/ProsusAI/finbert) for sentiment analysis
+
+---
+
+## 📧 Contact
+
+**Project Maintainer**: MDhruv03  
+**Repository**: [https://github.com/MDhruv03/NeuroQuant](https://github.com/MDhruv03/NeuroQuant)
+
+---
+
+**⭐ Star this repository if you find it helpful!**
 
