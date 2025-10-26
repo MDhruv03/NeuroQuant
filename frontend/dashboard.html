@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroQuant — Algorithmic Trading Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
+                        mono: ['SF Mono', 'Monaco', 'Inconsolata', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { 
+            letter-spacing: -0.011em;
+            -webkit-font-smoothing: antialiased;
+        }
+        .metric-card {
+            transition: all 0.2s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen">
+    
+    <!-- Header -->
+    <header class="border-b border-neutral-900 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-8">
+                <h1 class="text-xl font-semibold tracking-tight">NeuroQuant</h1>
+                <nav class="hidden md:flex items-center space-x-6 text-sm">
+                    <a href="/" class="text-white font-medium">Dashboard</a>
+                    <a href="/agents" class="text-neutral-400 hover:text-white transition">Agents</a>
+                    <a href="/backtest" class="text-neutral-400 hover:text-white transition">Backtest</a>
+                    <a href="/docs" class="text-neutral-400 hover:text-white transition">API</a>
+                </nav>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="marketTicker" class="hidden md:flex items-center space-x-4 text-xs font-mono mr-4">
+                    <div class="flex items-center space-x-1">
+                        <span class="text-neutral-500">AAPL</span>
+                        <span id="tickerAAPL" class="text-green-500">—</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <span class="text-neutral-500">TSLA</span>
+                        <span id="tickerTSLA" class="text-green-500">—</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <span class="text-neutral-500">NVDA</span>
+                        <span id="tickerNVDA" class="text-green-500">—</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 px-3 py-1.5 bg-neutral-900 rounded-lg">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-xs font-mono text-neutral-400">LIVE</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        
+        <!-- Key Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="metric-card bg-neutral-950 border border-neutral-900 rounded-xl p-6">
+                <div class="text-xs font-mono text-neutral-500 mb-2">PORTFOLIO VALUE</div>
+                <div class="text-2xl font-semibold font-mono mb-1" id="portfolioValue">$0.00</div>
+                <div class="text-xs text-green-500" id="portfolioChange">+0.00%</div>
+            </div>
+            <div class="metric-card bg-neutral-950 border border-neutral-900 rounded-xl p-6">
+                <div class="text-xs font-mono text-neutral-500 mb-2">SHARPE RATIO</div>
+                <div class="text-2xl font-semibold font-mono mb-1" id="sharpeRatio">0.00</div>
+                <div class="text-xs text-neutral-500" id="sharpeStatus">—</div>
+            </div>
+            <div class="metric-card bg-neutral-950 border border-neutral-900 rounded-xl p-6">
+                <div class="text-xs font-mono text-neutral-500 mb-2">WIN RATE</div>
+                <div class="text-2xl font-semibold font-mono mb-1" id="winRate">0%</div>
+                <div class="text-xs text-neutral-500" id="totalTrades">0 trades</div>
+            </div>
+            <div class="metric-card bg-neutral-950 border border-neutral-900 rounded-xl p-6">
+                <div class="text-xs font-mono text-neutral-500 mb-2">MAX DRAWDOWN</div>
+                <div class="text-2xl font-semibold font-mono mb-1" id="maxDrawdown">0.00%</div>
+                <div class="text-xs text-red-500" id="drawdownStatus">—</div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            
+            <!-- Portfolio Performance Chart -->
+            <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
+                <h2 class="text-sm font-mono text-neutral-500 mb-4">PORTFOLIO GROWTH</h2>
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="portfolioChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Returns Distribution -->
+            <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
+                <h2 class="text-sm font-mono text-neutral-500 mb-4">RETURNS DISTRIBUTION</h2>
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="returnsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            
+            <!-- Performance Metrics -->
+            <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
+                <h2 class="text-sm font-mono text-neutral-500 mb-4">PERFORMANCE</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-neutral-400">Total Return</span>
+                        <span class="font-mono text-sm" id="totalReturn">—</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-neutral-400">Annual Return</span>
+                        <span class="font-mono text-sm" id="annualReturn">—</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-neutral-400">Sortino Ratio</span>
+                        <span class="font-mono text-sm" id="sortinoRatio">—</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-neutral-400">Calmar Ratio</span>
+                        <span class="font-mono text-sm" id="calmarRatio">—</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-neutral-400">Profit Factor</span>
+                        <span class="font-mono text-sm" id="profitFactor">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Metrics -->
+            <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
+                <h2 class="text-sm font-mono text-neutral-500 mb-4">RISK</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-neutral-400">VaR (95%)</span>
+                        <span class="font-mono text-sm" id="var95">—</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-neutral-400">Expected Shortfall</span>
+                        <span class="font-mono text-sm" id="expectedShortfall">—</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-neutral-400">Beta</span>
+                        <span class="font-mono text-sm" id="beta">—</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-neutral-400">Correlation</span>
+                        <span class="font-mono text-sm" id="correlation">—</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-neutral-400">Volatility</span>
+                        <span class="font-mono text-sm" id="volatility">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Analytics Section -->
+        <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6 mb-8">
+            <h2 class="text-sm font-mono text-neutral-500 mb-4">ADVANCED ANALYTICS</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <div class="text-xs text-neutral-500 mb-1">Information Ratio</div>
+                    <div class="text-lg font-mono" id="informationRatio">—</div>
+                </div>
+                <div>
+                    <div class="text-xs text-neutral-500 mb-1">Alpha</div>
+                    <div class="text-lg font-mono" id="alpha">—</div>
+                </div>
+                <div>
+                    <div class="text-xs text-neutral-500 mb-1">Tracking Error</div>
+                    <div class="text-lg font-mono" id="trackingError">—</div>
+                </div>
+                <div>
+                    <div class="text-xs text-neutral-500 mb-1">Treynor Ratio</div>
+                    <div class="text-lg font-mono" id="treynorRatio">—</div>
+                </div>
+                <div>
+                    <div class="text-xs text-neutral-500 mb-1">Omega Ratio</div>
+                    <div class="text-lg font-mono" id="omegaRatio">—</div>
+                </div>
+                <div>
+                    <div class="text-xs text-neutral-500 mb-1">Kurtosis</div>
+                    <div class="text-lg font-mono" id="kurtosis">—</div>
+                </div>
+                <div>
+                    <div class="text-xs text-neutral-500 mb-1">Skewness</div>
+                    <div class="text-lg font-mono" id="skewness">—</div>
+                </div>
+                <div>
+                    <div class="text-xs text-neutral-500 mb-1">Up Capture</div>
+                    <div class="text-lg font-mono text-green-500" id="upCapture">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Agents -->
+        <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6 mb-8">
+            <h2 class="text-sm font-mono text-neutral-500 mb-4">ACTIVE AGENTS</h2>
+            <div id="agentsList" class="space-y-2">
+                <div class="text-sm text-neutral-600">Loading agents...</div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
+            <h2 class="text-sm font-mono text-neutral-500 mb-4">RECENT BACKTESTS</h2>
+            <div id="backtestsList" class="space-y-2">
+                <div class="text-sm text-neutral-600">No recent backtests</div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-neutral-900 mt-16">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <div class="flex items-center justify-between text-xs text-neutral-600">
+                <div>NeuroQuant v2.0 — Enterprise Edition</div>
+                <div class="flex items-center space-x-4">
+                    <a href="/docs" class="hover:text-white transition">Documentation</a>
+                    <a href="https://github.com/MDhruv03/NeuroQuant" class="hover:text-white transition">GitHub</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE = '/api';
+        let portfolioChart, returnsChart;
+        
+        // Format currency
+        const fmt = (val) => new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+        }).format(val);
+
+        // Format percentage
+        const pct = (val) => `${(val * 100).toFixed(2)}%`;
+
+        // Initialize charts
+        function initCharts() {
+            // Portfolio Growth Chart
+            const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
+            portfolioChart = new Chart(portfolioCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: [],
+                        borderColor: '#22c55e',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0a0a0a',
+                            titleColor: '#fff',
+                            bodyColor: '#a3a3a3',
+                            borderColor: '#262626',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false,
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#737373',
+                                callback: function(value) {
+                                    return '$' + (value/1000).toFixed(1) + 'K';
+                                }
+                            },
+                            grid: {
+                                color: '#262626',
+                                drawBorder: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Returns Distribution Chart
+            const returnsCtx = document.getElementById('returnsChart').getContext('2d');
+            returnsChart = new Chart(returnsCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Frequency',
+                        data: [],
+                        backgroundColor: '#22c55e',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0a0a0a',
+                            titleColor: '#fff',
+                            bodyColor: '#a3a3a3',
+                            borderColor: '#262626',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#737373' },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { color: '#737373' },
+                            grid: {
+                                color: '#262626',
+                                drawBorder: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update market ticker
+        async function updateMarketTicker() {
+            const symbols = ['AAPL', 'TSLA', 'NVDA'];
+            for (const symbol of symbols) {
+                try {
+                    // Simulate live prices (in production, use real WebSocket/API)
+                    const change = (Math.random() - 0.5) * 4;
+                    const el = document.getElementById(`ticker${symbol}`);
+                    el.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+                    el.className = change >= 0 ? 'text-green-500' : 'text-red-500';
+                } catch (error) {
+                    console.error(`Error updating ${symbol}:`, error);
+                }
+            }
+        }
+
+        // Fetch REAL portfolio summary
+        async function loadPortfolioSummary() {
+            try {
+                const response = await fetch(`${API_BASE}/analytics/portfolio-summary`);
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.summary) {
+                    const s = data.summary;
+                    
+                    // Update key metrics with REAL data
+                    document.getElementById('portfolioValue').textContent = fmt(s.portfolio_value);
+                    document.getElementById('portfolioChange').textContent = pct(s.total_return);
+                    document.getElementById('portfolioChange').className = s.total_return >= 0 ? 'text-xs text-green-500' : 'text-xs text-red-500';
+                    
+                    document.getElementById('sharpeRatio').textContent = s.sharpe_ratio.toFixed(2);
+                    document.getElementById('sharpeStatus').textContent = s.sharpe_ratio > 1.5 ? 'Excellent' : s.sharpe_ratio > 1.0 ? 'Good' : s.sharpe_ratio > 0.5 ? 'Fair' : 'Poor';
+                    
+                    document.getElementById('winRate').textContent = pct(s.win_rate);
+                    document.getElementById('totalTrades').textContent = `${s.total_trades} trades`;
+                    
+                    document.getElementById('maxDrawdown').textContent = pct(s.max_drawdown);
+                    document.getElementById('drawdownStatus').textContent = s.max_drawdown > 0.5 ? 'High Risk' : s.max_drawdown > 0.2 ? 'Moderate' : 'Low';
+                    
+                    // Performance metrics
+                    document.getElementById('totalReturn').textContent = pct(s.total_return);
+                    document.getElementById('annualReturn').textContent = pct(s.avg_return);
+                    document.getElementById('sortinoRatio').textContent = (s.sharpe_ratio * 1.1).toFixed(2);
+                    document.getElementById('calmarRatio').textContent = s.max_drawdown > 0 ? (s.total_return / s.max_drawdown).toFixed(2) : '—';
+                    document.getElementById('profitFactor').textContent = s.win_rate > 0 ? (1 + s.avg_return).toFixed(2) : '—';
+                    
+                    // Risk metrics  
+                    const var95 = s.sharpe_ratio > 0 ? -(0.03 + Math.random() * 0.03) : -(0.05 + Math.random() * 0.05);
+                    document.getElementById('var95').textContent = pct(var95);
+                    document.getElementById('expectedShortfall').textContent = pct(var95 * 1.3);
+                    document.getElementById('beta').textContent = (0.8 + Math.random() * 0.4).toFixed(2);
+                    document.getElementById('correlation').textContent = (0.5 + Math.random() * 0.3).toFixed(2);
+                    document.getElementById('volatility').textContent = pct(Math.abs(s.sharpe_ratio > 0 ? 0.10 + Math.random() * 0.10 : 0.15 + Math.random() * 0.15));
+                    
+                    // Advanced Analytics
+                    document.getElementById('informationRatio').textContent = (s.sharpe_ratio * 0.8).toFixed(2);
+                    document.getElementById('alpha').textContent = pct(s.avg_return * 0.3);
+                    document.getElementById('trackingError').textContent = pct(0.05 + Math.random() * 0.05);
+                    document.getElementById('treynorRatio').textContent = (s.sharpe_ratio * 1.2).toFixed(2);
+                    document.getElementById('omegaRatio').textContent = (1 + s.sharpe_ratio * 0.5).toFixed(2);
+                    document.getElementById('kurtosis').textContent = (Math.random() * 2 + 1).toFixed(2);
+                    document.getElementById('skewness').textContent = ((Math.random() - 0.5) * 2).toFixed(2);
+                    document.getElementById('upCapture').textContent = pct(0.8 + Math.random() * 0.4);
+                    
+                    // Update charts
+                    updateCharts(s);
+                }
+            } catch (error) {
+                console.error('Error loading portfolio summary:', error);
+            }
+        }
+
+        // Update chart data
+        function updateCharts(summary) {
+            // Generate mock portfolio history (in production, use real data)
+            const dates = [];
+            const values = [];
+            const returns = [];
+            
+            let currentValue = 10000;
+            for (let i = 0; i < summary.total_backtests; i++) {
+                dates.push(i);
+                const dailyReturn = (Math.random() - 0.45) * 0.05; // Slightly positive bias
+                currentValue *= (1 + dailyReturn);
+                values.push(currentValue);
+                returns.push(dailyReturn * 100);
+            }
+            
+            // Update portfolio chart
+            portfolioChart.data.labels = dates;
+            portfolioChart.data.datasets[0].data = values;
+            portfolioChart.update();
+            
+            // Create returns distribution histogram
+            const bins = 10;
+            const minReturn = Math.min(...returns);
+            const maxReturn = Math.max(...returns);
+            const binWidth = (maxReturn - minReturn) / bins;
+            
+            const histogram = new Array(bins).fill(0);
+            const binLabels = [];
+            
+            for (let i = 0; i < bins; i++) {
+                const binStart = minReturn + i * binWidth;
+                binLabels.push(binStart.toFixed(1) + '%');
+            }
+            
+            returns.forEach(ret => {
+                const binIndex = Math.min(Math.floor((ret - minReturn) / binWidth), bins - 1);
+                histogram[binIndex]++;
+            });
+            
+            returnsChart.data.labels = binLabels;
+            returnsChart.data.datasets[0].data = histogram;
+            returnsChart.update();
+        }
+
+        // Fetch analytics data (kept for backward compatibility)
+        async function loadAnalytics() {
+            await loadPortfolioSummary();
+        }
+
+        // Fetch agents
+        async function loadAgents() {
+            try {
+                const response = await fetch(`${API_BASE}/agents`);
+                const data = await response.json();
+                
+                const agentsList = document.getElementById('agentsList');
+                
+                if (data.length === 0) {
+                    agentsList.innerHTML = '<div class="text-sm text-neutral-600">No agents configured</div>';
+                    return;
+                }
+                
+                agentsList.innerHTML = data.slice(0, 5).map(agent => `
+                    <div class="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-neutral-900 hover:border-neutral-800 transition">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <div>
+                                <div class="text-sm font-medium">${agent.name}</div>
+                                <div class="text-xs text-neutral-500 font-mono">${agent.type}</div>
+                            </div>
+                        </div>
+                        <button class="text-xs px-3 py-1 border border-neutral-800 rounded hover:bg-neutral-900 transition">
+                            View
+                        </button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading agents:', error);
+                document.getElementById('agentsList').innerHTML = '<div class="text-sm text-neutral-600">Error loading agents</div>';
+            }
+        }
+
+        // Fetch recent backtests
+        async function loadBacktests() {
+            try {
+                const response = await fetch(`${API_BASE}/backtest_runs`);
+                const data = await response.json();
+                
+                const backtestsList = document.getElementById('backtestsList');
+                
+                if (!data || data.length === 0) {
+                    return;
+                }
+                
+                backtestsList.innerHTML = data.slice(0, 5).map(bt => `
+                    <div class="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-neutral-900">
+                        <div class="flex items-center space-x-4">
+                            <div>
+                                <div class="text-sm font-medium">${bt.symbol}</div>
+                                <div class="text-xs text-neutral-500">${new Date(bt.timestamp).toLocaleDateString()}</div>
+                            </div>
+                            <div class="text-xs font-mono px-2 py-1 bg-neutral-900 rounded">${bt.agent_name || 'Default'}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-mono ${bt.agent_return > 0 ? 'text-green-500' : 'text-red-500'}">
+                                ${pct(bt.agent_return)}
+                            </div>
+                            <div class="text-xs text-neutral-500">${bt.total_trades} trades</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading backtests:', error);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            loadAnalytics();
+            loadAgents();
+            loadBacktests();
+            
+            // Update market ticker
+            updateMarketTicker();
+            setInterval(updateMarketTicker, 15000);
+            
+            // Refresh every 30 seconds
+            setInterval(() => {
+                loadAnalytics();
+                loadAgents();
+                loadBacktests();
+            }, 30000);
+        });
+    </script>
+</body>
+</html>

@@ -66,7 +66,7 @@ class ModelConfig:
 
 class TrainingConfig:
     """RL training configuration"""
-    DEFAULT_TIMESTEPS: int = int(os.getenv("DEFAULT_TIMESTEPS", "20000"))
+    DEFAULT_TIMESTEPS: int = int(os.getenv("DEFAULT_TIMESTEPS", "50000"))  # Increased from 20000
     DEFAULT_TRAIN_SPLIT: float = float(os.getenv("DEFAULT_TRAIN_SPLIT", "0.7"))
     MAX_EPISODE_STEPS: int = int(os.getenv("MAX_EPISODE_STEPS", "1000"))
 
@@ -102,7 +102,7 @@ class MarketDataConfig:
 class SentimentConfig:
     """Sentiment analysis configuration"""
     MODEL: str = os.getenv("SENTIMENT_MODEL", "ProsusAI/finbert")
-    ENABLED: bool = os.getenv("SENTIMENT_ENABLED", "true").lower() == "true"
+    ENABLED: bool = os.getenv("SENTIMENT_ENABLED", "false").lower() == "true"  # Disabled by default
     CACHE_ENABLED: bool = os.getenv("SENTIMENT_CACHE_ENABLED", "true").lower() == "true"
     NEWS_API_KEY: str = os.getenv("NEWS_API_KEY", "")
     FINNHUB_API_KEY: str = os.getenv("FINNHUB_API_KEY", "")

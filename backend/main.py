@@ -1,11 +1,22 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import uvicorn
 from datetime import datetime
+import webbrowser
+import os
+from pathlib import Path
+import threading
+import time
+import sys
+
+# Ensure project root is in path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 from backend.api import routes
 from database.database import create_db_and_tables
@@ -97,7 +108,11 @@ async def startup_event():
     logger.info(f"Initial Portfolio: ${config.financial.INITIAL_PORTFOLIO:,.2f}")
     logger.info(f"API running on http://{config.api.HOST}:{config.api.PORT}")
     logger.info(f"API Docs: http://{config.api.HOST}:{config.api.PORT}/docs")
+    logger.info(f"Frontend: http://{config.api.HOST if config.api.HOST != '0.0.0.0' else 'localhost'}:{config.api.PORT}")
     logger.info("=" * 60)
+    
+    # Open browser in a separate thread after server starts
+    # threading.Thread(target=open_browser, daemon=True).start()  # Temporarily disabled
 
 
 # Shutdown event
@@ -107,8 +122,49 @@ async def shutdown_event():
     logger.info("Shutting down NeuroQuant Trading System...")
 
 
-# Include routers
+# Mount static files (frontend)
+frontend_dir = Path(__file__).parent.parent / "frontend"
+if frontend_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(frontend_dir)), name="static")
+    logger.info(f"Frontend mounted at /static")
+    
+    # Serve HTML pages - these take precedence over API routes
+    @app.get("/")
+    async def serve_frontend():
+        """Serve the main dashboard page"""
+        return FileResponse(frontend_dir / "dashboard.html")
+    
+    @app.get("/dashboard")
+    async def serve_dashboard():
+        """Serve the professional dashboard"""
+        return FileResponse(frontend_dir / "dashboard.html")
+    
+    @app.get("/agents")
+    async def serve_agents_page():
+        """Serve the agents page"""
+        return FileResponse(frontend_dir / "agents.html")
+    
+    @app.get("/backtest")
+    async def serve_backtest_page():
+        """Serve the backtest page"""
+        return FileResponse(frontend_dir / "backtest.html")
+else:
+    logger.warning(f"Frontend directory not found at {frontend_dir}")
+
+
+# Include API routers (with /api prefix, won't conflict with frontend routes)
 app.include_router(routes.router)
+
+# Include advanced features router
+from backend.api import advanced_routes
+app.include_router(advanced_routes.router, prefix="/api")
+
+def open_browser():
+    """Open browser after a short delay to ensure server is running"""
+    time.sleep(1.5)
+    url = f"http://{config.api.HOST if config.api.HOST != '0.0.0.0' else 'localhost'}:{config.api.PORT}"
+    logger.info(f"Opening browser: {url}")
+    webbrowser.open(url)
 
 if __name__ == "__main__":
     logger.info("Starting server...")

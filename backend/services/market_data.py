@@ -117,8 +117,8 @@ class MarketDataProvider:
             data['BB_position'] = (data['Close'] - data['BB_lower']) / (data['BB_upper'] - data['BB_lower'])
             data['Volume_ratio'] = data['Volume'] / data['Volume_SMA']
             
-            # Forward fill NaN values
-            data = data.fillna(method='ffill').dropna()
+            # Forward fill and drop NaN values
+            data = data.ffill().dropna()
             
             logger.debug(f"Calculated technical indicators, remaining rows: {len(data)}")
             return data

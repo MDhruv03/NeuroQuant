@@ -82,13 +82,21 @@ class BacktestEngine:
         initial_value = env.portfolio
         done = False
         
+        step_count = 0
         while not done:
             action, _ = agent.predict(obs)
-            obs, _, done, _, _ = env.step(action)
+            obs, reward, done, _, _ = env.step(action)
+            step_count += 1
             
+        # Get final portfolio value (cash + holdings)
+        final_value = env.portfolio
+        
+        print(f"Backtest complete: {step_count} steps, {len(env.trades)} trades")
+        print(f"Initial: ${initial_value:.2f}, Final: ${final_value:.2f}")
+        
         return {
             'initial_value': initial_value,
-            'final_value': env.portfolio,
+            'final_value': final_value,
             'trades': env.trades,
             'portfolio_history': env.portfolio_history,
             'portfolio_dates': env.portfolio_dates

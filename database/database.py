@@ -1,7 +1,8 @@
 import sqlite3
-import json # Import json for parameters
+import json
+from config import config
 
-DATABASE_URL = "./database/neuroquant.db"
+DATABASE_URL = config.database.URL if hasattr(config.database, 'URL') else "./database/neuroquant.db"
 
 def create_db_and_tables():
     with sqlite3.connect(DATABASE_URL) as conn:
