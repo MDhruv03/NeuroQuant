@@ -1,36 +1,34 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Dict, List
+from datetime import datetime
+import traceback
+import sqlite3
+from backend.services.market_data import MarketDataProvider
+from backend.services.trading_agent import BacktestEngine
+from backend.services.agent_manager import AgentManager
+from database.database import get_db # Import get_db for dependency injection
+from fastapi import APIRouter, HTTPException, UploadFile, File # Import UploadFile, File
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 from datetime import datetime
 import traceback
 import sqlite3
-import json
-import pandas as pd
-import io
-import asyncio
+import json # Import json for storing/retrieving JSON strings
+import pandas as pd # Import pandas for CSV parsing
+import io # Import io for file handling
 
 from backend.services.market_data import MarketDataProvider
 from backend.services.trading_agent import BacktestEngine
 from backend.services.agent_manager import AgentManager
-from backend.services.portfolio_manager import PortfolioManager, MultiSymbolBacktester
-from backend.services.strategy_optimizer import StrategyOptimizer, GeneticOptimizer
-from backend.services.live_trading import LiveTradingSimulator, simple_momentum_agent, AlertRule
-from backend.api import analytics_routes
-from database.database import get_db
+from database.database import get_db # Import get_db for dependency injection
+from fastapi import APIRouter, HTTPException, Depends
 
-# Create router with /api prefix
-router = APIRouter(prefix="/api")
-
-# Include analytics routes (already has /api/analytics prefix)
-router.include_router(analytics_routes.router, prefix="")
+router = APIRouter()
 
 # Global instances
 data_provider = MarketDataProvider()
 agent_manager = AgentManager() # Initialize AgentManager
-
-# Live trading simulators
-live_simulators: Dict[str, LiveTradingSimulator] = {}
-simulator_tasks: Dict[str, asyncio.Task] = {}
 
 class BacktestRequest(BaseModel):
     symbol: str
@@ -82,6 +80,10 @@ class CustomDatasetResponse(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
+
+@router.get("/")
+async def root():
+    return {"message": "NeuroQuant MVP is running!", "version": "1.0.0"}
 
 @router.get("/health")
 async def health_check():
@@ -303,3 +305,47 @@ async def get_custom_datasets(conn: sqlite3.Connection = Depends(get_db)):
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to retrieve custom datasets: {e}")
+
+
+@router.get("/symbols")
+async def get_popular_symbols(conn: sqlite3.Connection = Depends(get_db)): # Inject conn
+    """Get list of popular trading symbols and custom datasets"""
+    yfinance_symbols = ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "NVDA", "META", "NFLX", "AMD", "CRM"]
+    
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name FROM custom_datasets")
+    custom_datasets = cursor.fetchall()
+    
+    custom_symbol_options = [{"id": row['id'], "name": f"Custom: {row['name']}"} for row in custom_datasets]
+    
+    return {
+        "yfinance_symbols": yfinance_symbols,
+        "custom_datasets": custom_symbol_options
+    }
+
+@router.post("/agents", response_model=AgentResponse)
+async def create_agent(agent_request: AgentCreateRequest, conn: sqlite3.Connection = Depends(get_db)):
+    """Create a new trading agent"""
+    try:
+        new_agent = agent_manager.create_agent(
+            conn, # Pass the connection
+            name=agent_request.name,
+            agent_type=agent_request.type,
+            parameters=agent_request.parameters
+        )
+        return AgentResponse(**new_agent)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to create agent.")
+
+@router.get("/agents", response_model=List[AgentResponse])
+async def get_agents(conn: sqlite3.Connection = Depends(get_db)):
+    """Get a list of all registered trading agents"""
+    try:
+        agents = agent_manager.get_agents(conn) # Pass the connection
+        return [AgentResponse(**agent) for agent in agents]
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to retrieve agents.")
