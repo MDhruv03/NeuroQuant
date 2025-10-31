@@ -62,15 +62,15 @@ class LiveTradingSimulator:
         self.is_running = False
         self.agent_callbacks: Dict[str, Callable] = {}
         
-    def register_agent(self, agent_name: str, callback: Callable):
+    def register_strategy(self, strategy_name: str, callback: Callable):
         """
-        Register an agent for live trading
+        Register a strategy for live trading
         
         Args:
-            agent_name: Name of the agent
-            callback: Function that takes (symbol, price_data) and returns action, confidence
+            strategy_name: Name of the strategy
+            callback: Function that takes (symbol, price_data) and returns action, confidence, reason
         """
-        self.agent_callbacks[agent_name] = callback
+        self.agent_callbacks[strategy_name] = callback
     
     def add_alert(self, alert: AlertRule):
         """Add price alert or notification rule"""
@@ -130,8 +130,8 @@ class LiveTradingSimulator:
         return triggered_alerts
     
     async def generate_signals(self):
-        """Generate trading signals from registered agents"""
-        for agent_name, callback in self.agent_callbacks.items():
+        """Generate trading signals from registered strategies"""
+        for strategy_name, callback in self.agent_callbacks.items():
             for symbol in self.symbols:
                 if symbol not in self.price_history or not self.price_history[symbol]:
                     continue
@@ -140,7 +140,7 @@ class LiveTradingSimulator:
                 recent_data = self.price_history[symbol][-100:]  # Last 100 data points
                 
                 try:
-                    # Call agent callback
+                    # Call strategy callback
                     action, confidence, reason = callback(symbol, recent_data)
                     
                     signal = LiveTradeSignal(
@@ -149,7 +149,7 @@ class LiveTradingSimulator:
                         action=action,
                         confidence=confidence,
                         reason=reason,
-                        agent_name=agent_name
+                        agent_name=strategy_name
                     )
                     
                     self.signals.append(signal)
@@ -170,7 +170,7 @@ class LiveTradingSimulator:
                         )
                         
                 except Exception as e:
-                    print(f"Error generating signal for {symbol} with {agent_name}: {e}")
+                    print(f"Error generating signal for {symbol} with {strategy_name}: {e}")
     
     async def run(self, duration_hours: Optional[float] = None):
         """
@@ -280,10 +280,10 @@ class LiveTradingSimulator:
         }
 
 
-# Example agent callback
-def simple_momentum_agent(symbol: str, price_data: List[Tuple[datetime, float]]) -> tuple:
+# Example strategy callback
+def simple_momentum_strategy(symbol: str, price_data: List[Tuple[datetime, float]]) -> tuple:
     """
-    Simple momentum-based trading agent
+    Simple momentum-based trading strategy
     Returns: (action, confidence, reason)
     """
     if len(price_data) < 20:

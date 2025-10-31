@@ -46,25 +46,26 @@ def create_db_and_tables():
         """)
         conn.commit()
 
-        # Add default agents if they don't exist
-        default_agents = [
-            {"name": "DQN Agent (Default)", "type": "DQN", "parameters": {"learning_rate": 0.001, "gamma": 0.99}},
-            {"name": "Indicator-Based (SMA Cross)", "type": "IndicatorBased", "parameters": {"short_sma": 20, "long_sma": 50}},
-            {"name": "Random Agent", "type": "Random", "parameters": {}}
+        # Add default strategies if they don't exist
+        default_strategies = [
+            {"name": "MA Crossover (20/50)", "type": "ma_cross", "parameters": {"short_window": 20, "long_window": 50}},
+            {"name": "RSI Mean Reversion", "type": "rsi", "parameters": {"period": 14, "oversold": 30, "overbought": 70}},
+            {"name": "Momentum (20 days)", "type": "momentum", "parameters": {"lookback": 20}},
+            {"name": "Buy & Hold Benchmark", "type": "buy_hold", "parameters": {}}
         ]
 
-        for agent_data in default_agents:
+        for strategy_data in default_strategies:
             try:
                 cursor.execute(
                     "INSERT INTO agents (name, type, parameters) VALUES (?, ?, ?)",
-                    (agent_data["name"], agent_data["type"], json.dumps(agent_data["parameters"]))
+                    (strategy_data["name"], strategy_data["type"], json.dumps(strategy_data["parameters"]))
                 )
                 conn.commit()
-                print(f"Default agent '{agent_data['name']}' added.")
+                print(f"Default strategy '{strategy_data['name']}' added.")
             except sqlite3.IntegrityError:
-                print(f"Default agent '{agent_data['name']}' already exists, skipping.")
+                print(f"Default strategy '{strategy_data['name']}' already exists, skipping.")
             except Exception as e:
-                print(f"Error adding default agent '{agent_data['name']}': {e}")
+                print(f"Error adding default strategy '{strategy_data['name']}': {e}")
 
 def get_db():
     conn = sqlite3.connect(DATABASE_URL, check_same_thread=False)

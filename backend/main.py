@@ -131,18 +131,18 @@ if frontend_dir.exists():
     # Serve HTML pages - these take precedence over API routes
     @app.get("/")
     async def serve_frontend():
-        """Serve the main dashboard page"""
-        return FileResponse(frontend_dir / "dashboard.html")
+        """Serve the landing page"""
+        return FileResponse(frontend_dir / "index.html")
     
     @app.get("/dashboard")
     async def serve_dashboard():
         """Serve the professional dashboard"""
         return FileResponse(frontend_dir / "dashboard.html")
     
-    @app.get("/agents")
-    async def serve_agents_page():
-        """Serve the agents page"""
-        return FileResponse(frontend_dir / "agents.html")
+    @app.get("/strategies")
+    async def serve_strategies_page():
+        """Serve the strategies page"""
+        return FileResponse(frontend_dir / "strategies.html")
     
     @app.get("/backtest")
     async def serve_backtest_page():
@@ -158,6 +158,10 @@ app.include_router(routes.router)
 # Include advanced features router
 from backend.api import advanced_routes
 app.include_router(advanced_routes.router, prefix="/api")
+
+# Include institutional backtesting router
+from backend.api import backtest_routes
+app.include_router(backtest_routes.router, prefix="/api/v2", tags=["Institutional Backtesting"])
 
 def open_browser():
     """Open browser after a short delay to ensure server is running"""

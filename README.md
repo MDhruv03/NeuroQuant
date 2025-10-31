@@ -492,7 +492,7 @@ The system calculates comprehensive metrics:
 - Microservices architecture (FastAPI + Celery + Redis)
 - User authentication and multi-tenancy
 - Async simulation with WebSockets
-- Modern frontend with React/Vue
+- Modern frontend
 - Multi-stock portfolio allocation
 
 ### 🎯 Stretch Goals

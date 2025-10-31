@@ -9,9 +9,10 @@ from datetime import datetime
 import traceback
 import asyncio
 
-from backend.services.portfolio_manager import MultiSymbolBacktester
+from backend.services.portfolio_manager import PortfolioManager
+# from backend.services.portfolio_manager import MultiSymbolBacktester  # Removed - use institutional backtester
 from backend.services.strategy_optimizer import StrategyOptimizer, GeneticOptimizer
-from backend.services.live_trading import LiveTradingSimulator, simple_momentum_agent, AlertRule
+from backend.services.live_trading import LiveTradingSimulator, simple_momentum_strategy, AlertRule
 
 router = APIRouter(prefix="/advanced")
 
@@ -30,38 +31,8 @@ class MultiSymbolBacktestRequest(BaseModel):
 
 @router.post("/backtest/multi_symbol")
 async def run_multi_symbol_backtest(request: MultiSymbolBacktestRequest):
-    """Run backtest across multiple symbols simultaneously with portfolio management"""
-    try:
-        backtester = MultiSymbolBacktester(
-            symbols=request.symbols,
-            start_date=request.start_date,
-            end_date=request.end_date
-        )
-        
-        # Load data
-        backtester.load_data()
-        
-        # Create agent dict (simplified - would use actual trained agents)
-        agent_dict = {symbol: None for symbol in request.symbols}
-        
-        # Run backtest
-        results = backtester.run_backtest(
-            agent_dict=agent_dict,
-            initial_capital=request.initial_capital
-        )
-        
-        return {
-            "status": "success",
-            "symbols": request.symbols,
-            "final_value": results['final_value'],
-            "total_return": results['total_return'],
-            "metrics": results['metrics'],
-            "total_trades": len(results['portfolio_manager'].trade_history),
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+    """Run backtest across multiple symbols - Temporarily disabled"""
+    raise HTTPException(status_code=501, detail="Multi-symbol backtesting temporarily disabled. Use main /api/backtest endpoint.")
 
 
 class OptimizationRequest(BaseModel):
@@ -164,7 +135,7 @@ async def start_live_trading(request: LiveTradingRequest):
         )
         
         # Register momentum-based agent
-        simulator.register_agent("momentum", simple_momentum_agent)
+        simulator.register_strategy("momentum", simple_momentum_strategy)
         
         # Store simulator
         live_simulators[session_id] = simulator

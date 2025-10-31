@@ -19,7 +19,7 @@ if __name__ == "__main__":
     from backend.main import app, uvicorn, config
     
     print("\n" + "="*60)
-    print("🚀 Starting NeuroQuant Enterprise Edition")
+    print("🚀 Starting NeuroQuant")
     print("="*60 + "\n")
     
     uvicorn.run(

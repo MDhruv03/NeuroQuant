@@ -10,7 +10,6 @@ import json
 from config import config
 from utils.logging_config import setup_logger
 from utils.exceptions import DataFetchError, DataValidationError
-from backend.services.sentiment_analysis import SentimentAnalyzer
 
 logger = setup_logger(__name__)
 
@@ -48,7 +47,7 @@ class MarketDataProvider:
     """Handles market data fetching and preprocessing"""
     
     def __init__(self):
-        self.sentiment_analyzer = SentimentAnalyzer()
+        pass
         self.cache_enabled = config.market_data.CACHE_ENABLED
         self.cache = DataCache(ttl=config.market_data.CACHE_TTL) if self.cache_enabled else None
         logger.info("MarketDataProvider initialized")

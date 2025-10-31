@@ -40,8 +40,9 @@
             <div class="flex items-center space-x-8">
                 <h1 class="text-xl font-semibold tracking-tight">NeuroQuant</h1>
                 <nav class="hidden md:flex items-center space-x-6 text-sm">
-                    <a href="/" class="text-white font-medium">Dashboard</a>
-                    <a href="/agents" class="text-neutral-400 hover:text-white transition">Agents</a>
+                    <a href="/" class="text-neutral-400 hover:text-white transition">Home</a>
+                    <a href="/dashboard" class="text-white font-medium">Dashboard</a>
+                    <a href="/strategies" class="text-neutral-400 hover:text-white transition">Strategies</a>
                     <a href="/backtest" class="text-neutral-400 hover:text-white transition">Backtest</a>
                     <a href="/docs" class="text-neutral-400 hover:text-white transition">API</a>
                 </nav>
@@ -213,11 +214,11 @@
             </div>
         </div>
 
-        <!-- Active Agents -->
+        <!-- Active Strategies -->
         <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6 mb-8">
-            <h2 class="text-sm font-mono text-neutral-500 mb-4">ACTIVE AGENTS</h2>
+            <h2 class="text-sm font-mono text-neutral-500 mb-4">ACTIVE STRATEGIES</h2>
             <div id="agentsList" class="space-y-2">
-                <div class="text-sm text-neutral-600">Loading agents...</div>
+                <div class="text-sm text-neutral-600">Loading strategies...</div>
             </div>
         </div>
 
@@ -476,7 +477,7 @@
             await loadPortfolioSummary();
         }
 
-        // Fetch agents
+        // Fetch strategies
         async function loadAgents() {
             try {
                 const response = await fetch(`${API_BASE}/agents`);
@@ -485,17 +486,17 @@
                 const agentsList = document.getElementById('agentsList');
                 
                 if (data.length === 0) {
-                    agentsList.innerHTML = '<div class="text-sm text-neutral-600">No agents configured</div>';
+                    agentsList.innerHTML = '<div class="text-sm text-neutral-600">No strategies configured</div>';
                     return;
                 }
                 
-                agentsList.innerHTML = data.slice(0, 5).map(agent => `
+                agentsList.innerHTML = data.slice(0, 5).map(strategy => `
                     <div class="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-neutral-900 hover:border-neutral-800 transition">
                         <div class="flex items-center space-x-3">
                             <div class="w-2 h-2 bg-green-500 rounded-full"></div>
                             <div>
-                                <div class="text-sm font-medium">${agent.name}</div>
-                                <div class="text-xs text-neutral-500 font-mono">${agent.type}</div>
+                                <div class="text-sm font-medium">${strategy.name}</div>
+                                <div class="text-xs text-neutral-500 font-mono">${strategy.type}</div>
                             </div>
                         </div>
                         <button class="text-xs px-3 py-1 border border-neutral-800 rounded hover:bg-neutral-900 transition">
@@ -504,8 +505,8 @@
                     </div>
                 `).join('');
             } catch (error) {
-                console.error('Error loading agents:', error);
-                document.getElementById('agentsList').innerHTML = '<div class="text-sm text-neutral-600">Error loading agents</div>';
+                console.error('Error loading strategies:', error);
+                document.getElementById('agentsList').innerHTML = '<div class="text-sm text-neutral-600">Error loading strategies</div>';
             }
         }
 

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategies — NeuroQuant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { letter-spacing: -0.011em; -webkit-font-smoothing: antialiased; }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen">
+    <header class="border-b border-neutral-900 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-8">
+                <h1 class="text-xl font-semibold tracking-tight">NeuroQuant</h1>
+                <nav class="hidden md:flex items-center space-x-6 text-sm">
+                    <a href="/" class="text-neutral-400 hover:text-white transition">Home</a>
+                    <a href="/dashboard" class="text-neutral-400 hover:text-white transition">Dashboard</a>
+                    <a href="/strategies" class="text-white font-medium">Strategies</a>
+                    <a href="/backtest" class="text-neutral-400 hover:text-white transition">Backtest</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-semibold mb-2">Trading Strategies</h2>
+            <p class="text-neutral-500">Manage and configure quantitative trading strategies</p>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-4">Available Strategies</h3>
+                <div class="space-y-3" id="availableStrategies"></div>
+            </div>
+            
+            <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-4">Your Configurations</h3>
+                <div id="userStrategies" class="space-y-2">
+                    <div class="text-sm text-neutral-600">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+        const API_BASE = '/api';
+        
+        async function loadAvailableStrategies() {
+            try {
+                const response = await fetch(API_BASE + '/strategies');
+                const data = await response.json();
+                const container = document.getElementById('availableStrategies');
+                
+                container.innerHTML = data.strategies.map(s => `
+                    <div class="p-4 bg-black/30 rounded-lg border border-neutral-900 hover:border-neutral-800 transition">
+                        <h4 class="font-semibold mb-1">${s.name}</h4>
+                        <p class="text-xs text-neutral-400 mb-2">${s.description}</p>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs px-2 py-1 bg-green-600/10 text-green-600 rounded border border-green-600/20">${s.id}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        async function loadUserStrategies() {
+            try {
+                const response = await fetch(API_BASE + '/agents');
+                const data = await response.json();
+                const container = document.getElementById('userStrategies');
+                
+                if (data.length === 0) {
+                    container.innerHTML = '<div class="text-sm text-neutral-600">No custom configurations yet</div>';
+                    return;
+                }
+                
+                container.innerHTML = data.map(s => `
+                    <div class="p-3 bg-black/30 rounded-lg border border-neutral-900">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-sm font-medium">${s.name}</div>
+                                <div class="text-xs text-neutral-500">${s.type}</div>
+                            </div>
+                            <button class="text-xs px-3 py-1 border border-neutral-800 rounded hover:bg-neutral-900 transition">Edit</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        loadAvailableStrategies();
+        loadUserStrategies();
+    </script>
+</body>
+</html>
