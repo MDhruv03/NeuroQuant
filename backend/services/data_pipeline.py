@@ -318,12 +318,11 @@ class MarketDataPipeline:
             try:
                 quote = await self.get_realtime_quote(symbol)
                 if quote:
-                    # Notify all subscribers
                     for queue in self.subscribers[symbol]:
                         try:
                             await queue.put(quote)
-                        except:
-                            pass
+                        except asyncio.QueueFull:
+                            logger.warning(f"Queue full for {symbol}")
                 
                 await asyncio.sleep(interval)
             except Exception as e:
@@ -344,17 +343,12 @@ class MarketDataPipeline:
     
     def unsubscribe(self, symbol: str, queue: asyncio.Queue):
         """Unsubscribe from data stream"""
-        if symbol in self.subscribers:
-            try:
-                self.subscribers[symbol].remove(queue)
-            except ValueError:
-                pass
+        if symbol in self.subscribers and queue in self.subscribers[symbol]:
+            self.subscribers[symbol].remove(queue)
             
-            # Stop streaming if no more subscribers
-            if not self.subscribers[symbol]:
-                if symbol in self._streaming_tasks:
-                    self._streaming_tasks[symbol].cancel()
-                    del self._streaming_tasks[symbol]
+            if not self.subscribers[symbol] and symbol in self._streaming_tasks:
+                self._streaming_tasks[symbol].cancel()
+                del self._streaming_tasks[symbol]
     
     async def get_multiple_symbols(
         self, 

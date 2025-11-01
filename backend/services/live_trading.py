@@ -118,9 +118,6 @@ class LiveTradingSimulator:
                 triggered = True
             elif alert.condition == 'price_below' and current_price < alert.threshold:
                 triggered = True
-            elif alert.condition == 'volume_spike':
-                # Would implement volume analysis here
-                pass
             
             if triggered and not alert.triggered:
                 alert.triggered = True

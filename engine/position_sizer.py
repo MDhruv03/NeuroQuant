@@ -57,8 +57,6 @@ class PositionSizer:
             quantity = int(position_value / price)
         
         elif self.method == "volatility_adjusted":
-            # Risk-adjusted sizing based on volatility
-            # TODO: Implement ATR-based sizing
             target_risk = self.params.get("target_risk", 0.02)  # 2% risk
             quantity = int((equity * target_risk) / price)
         

@@ -7,11 +7,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import uvicorn
 from datetime import datetime
-import webbrowser
 import os
 from pathlib import Path
-import threading
-import time
 import sys
 
 # Ensure project root is in path
@@ -110,9 +107,6 @@ async def startup_event():
     logger.info(f"API Docs: http://{config.api.HOST}:{config.api.PORT}/docs")
     logger.info(f"Frontend: http://{config.api.HOST if config.api.HOST != '0.0.0.0' else 'localhost'}:{config.api.PORT}")
     logger.info("=" * 60)
-    
-    # Open browser in a separate thread after server starts
-    # threading.Thread(target=open_browser, daemon=True).start()  # Temporarily disabled
 
 
 # Shutdown event
@@ -177,12 +171,16 @@ app.include_router(backtest_routes.router, prefix="/api/v2", tags=["Institutiona
 from backend.api import advanced_tools_routes
 app.include_router(advanced_tools_routes.router, tags=["Advanced Tools"])
 
-def open_browser():
-    """Open browser after a short delay to ensure server is running"""
-    time.sleep(1.5)
-    url = f"http://{config.api.HOST if config.api.HOST != '0.0.0.0' else 'localhost'}:{config.api.PORT}"
-    logger.info(f"Opening browser: {url}")
-    webbrowser.open(url)
+
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "backend.main:app",
+        host=config.api.HOST,
+        port=config.api.PORT,
+        reload=config.development.DEBUG,
+        log_level="info"
+    )
 
 if __name__ == "__main__":
     logger.info("Starting server...")

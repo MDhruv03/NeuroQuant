@@ -10,7 +10,6 @@ import traceback
 import asyncio
 
 from backend.services.portfolio_manager import PortfolioManager
-# from backend.services.portfolio_manager import MultiSymbolBacktester  # Removed - use institutional backtester
 from backend.services.strategy_optimizer import StrategyOptimizer, GeneticOptimizer
 from backend.services.live_trading import LiveTradingSimulator, simple_momentum_strategy, AlertRule
 
