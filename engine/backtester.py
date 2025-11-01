@@ -266,27 +266,46 @@ class Backtester:
         sortino = self.portfolio.calculate_sortino_ratio()
         max_dd = self.portfolio.max_drawdown
         
+        # Calculate VaR and CVaR from equity curve
+        import numpy as np
+        if len(self.portfolio.equity_curve) > 1:
+            returns = np.diff(self.portfolio.equity_curve) / self.portfolio.equity_curve[:-1]
+            var_95 = float(np.percentile(returns, 5) * 100)  # 5th percentile (95% VaR)
+            var_99 = float(np.percentile(returns, 1) * 100)  # 1st percentile (99% VaR)
+            cvar_95 = float(returns[returns <= np.percentile(returns, 5)].mean() * 100) if len(returns[returns <= np.percentile(returns, 5)]) > 0 else 0.0
+            cvar_99 = float(returns[returns <= np.percentile(returns, 1)].mean() * 100) if len(returns[returns <= np.percentile(returns, 1)]) > 0 else 0.0
+        else:
+            var_95 = var_99 = cvar_95 = cvar_99 = 0.0
+        
         # Trade statistics
         num_trades = len(self.portfolio.fill_history)
         
+        # Ensure equity_curve is a list and timestamps are datetime objects
+        equity_curve = list(self.portfolio.equity_curve) if not isinstance(self.portfolio.equity_curve, list) else self.portfolio.equity_curve
+        timestamps = list(self.portfolio.timestamps) if not isinstance(self.portfolio.timestamps, list) else self.portfolio.timestamps
+        
         self.results = {
             'initial_capital': self.initial_capital,
-            'final_equity': final_equity,
-            'total_return': total_return,
-            'total_return_pct': total_return * 100,
-            'sharpe_ratio': sharpe,
-            'sortino_ratio': sortino,
-            'max_drawdown': max_dd,
-            'max_drawdown_pct': max_dd * 100,
-            'num_trades': num_trades,
-            'signals_generated': self.signals_generated,
-            'orders_placed': self.orders_placed,
-            'fills_received': self.fills_received,
-            'bars_processed': self.bars_processed,
-            'total_commission': self.portfolio.total_commission_paid,
-            'total_slippage': self.portfolio.total_slippage_cost,
-            'equity_curve': self.portfolio.equity_curve,
-            'timestamps': self.portfolio.timestamps
+            'final_equity': float(final_equity),
+            'total_return': float(total_return),
+            'total_return_pct': float(total_return * 100),
+            'sharpe_ratio': float(sharpe) if sharpe is not None else 0.0,
+            'sortino_ratio': float(sortino) if sortino is not None else 0.0,
+            'max_drawdown': float(max_dd) if max_dd is not None else 0.0,
+            'max_drawdown_pct': float(max_dd * 100) if max_dd is not None else 0.0,
+            'value_at_risk_95': var_95,
+            'value_at_risk_99': var_99,
+            'conditional_var_95': cvar_95,
+            'conditional_var_99': cvar_99,
+            'num_trades': int(num_trades),
+            'signals_generated': int(self.signals_generated),
+            'orders_placed': int(self.orders_placed),
+            'fills_received': int(self.fills_received),
+            'bars_processed': int(self.bars_processed),
+            'total_commission': float(self.portfolio.total_commission_paid),
+            'total_slippage': float(self.portfolio.total_slippage_cost),
+            'equity_curve': equity_curve,
+            'timestamps': timestamps
         }
     
     def _print_results(self):

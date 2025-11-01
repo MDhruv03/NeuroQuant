@@ -105,9 +105,16 @@ class BacktestResponse(BaseModel):
     outperformance: float
     total_trades: int = Field(..., ge=0)
     final_value: float = Field(..., ge=0)
-    trades: List[TradeInfo]
-    portfolio_history: List[float]
-    portfolio_dates: List[str]
+    trades: List[TradeInfo] = []
+    portfolio_history: List[float] = []
+    portfolio_dates: List[str] = []
+    sharpe_ratio: Optional[float] = None
+    sortino_ratio: Optional[float] = None
+    max_drawdown: Optional[float] = None
+    value_at_risk_95: Optional[float] = None
+    value_at_risk_99: Optional[float] = None
+    conditional_var_95: Optional[float] = None
+    conditional_var_99: Optional[float] = None
     metrics: Optional[PerformanceMetrics] = None
     agent_name: Optional[str] = None
 

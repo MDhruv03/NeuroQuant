@@ -60,25 +60,21 @@ class MovingAverageCrossStrategy(Strategy):
         if event.symbol not in self.symbols:
             return signals
         
-        # Get historical bars
-        bars = data_handler.get_latest_bars(event.symbol, n=self.long_window)
+        # Get historical bars (need extra bar for previous MA calculation)
+        bars = data_handler.get_latest_bars(event.symbol, n=self.long_window + 1)
         
-        if len(bars) < self.long_window:
-            return signals  # Not enough data
+        if len(bars) < self.long_window + 1:
+            return signals  # Not enough data for crossover detection
         
-        # Calculate MAs
-        closes = [bar.close for bar in bars]
+        # Calculate current MAs
+        closes = [float(bar.close) for bar in bars]  # Ensure floats
         short_ma = sum(closes[-self.short_window:]) / self.short_window
         long_ma = sum(closes[-self.long_window:]) / self.long_window
         
-        # Previous MAs
-        if len(bars) >= self.long_window + 1:
-            prev_bars = data_handler.get_latest_bars(event.symbol, n=self.long_window + 1)
-            prev_closes = [bar.close for bar in prev_bars[:-1]]
-            prev_short_ma = sum(prev_closes[-self.short_window:]) / self.short_window
-            prev_long_ma = sum(prev_closes[-self.long_window:]) / self.long_window
-        else:
-            return signals
+        # Calculate previous MAs (one bar back)
+        prev_closes = closes[:-1]
+        prev_short_ma = sum(prev_closes[-self.short_window:]) / self.short_window
+        prev_long_ma = sum(prev_closes[-self.long_window:]) / self.long_window
         
         symbol = event.symbol
         current_position = self.positions[symbol]

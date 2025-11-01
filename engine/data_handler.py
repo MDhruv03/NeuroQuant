@@ -133,12 +133,12 @@ class DataHandler:
             timestamp = df.index[idx]
             
             bar = BarData(
-                timestamp=timestamp,
-                open=row['Open'],
-                high=row['High'],
-                low=row['Low'],
-                close=row['Close'],
-                volume=int(row['Volume'].iloc[0]) if hasattr(row['Volume'], 'iloc') else int(row['Volume'])
+                timestamp=timestamp.to_pydatetime() if hasattr(timestamp, 'to_pydatetime') else timestamp,
+                open=float(row['Open']),
+                high=float(row['High']),
+                low=float(row['Low']),
+                close=float(row['Close']),
+                volume=int(row['Volume']) if 'Volume' in row and not hasattr(row['Volume'], 'iloc') else (int(row['Volume'].iloc[0]) if 'Volume' in row else 0)
             )
             
             # Store bar

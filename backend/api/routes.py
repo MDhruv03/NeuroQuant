@@ -53,11 +53,17 @@ async def run_backtest(request: BacktestRequest, conn: sqlite3.Connection = Depe
         backtester = Backtester(symbols, start_date, end_date, 100000.0, strategy)
         results = backtester.run()
         df = backtester.data_handler.data.get(request.symbol)
-        buy_hold_return = (df.iloc[-1]['Close'] / df.iloc[0]['Close'] - 1) * 100 if df is not None and len(df) > 0 else 0.0
+        buy_hold_return = float((float(df.iloc[-1]['Close']) / float(df.iloc[0]['Close']) - 1) * 100) if df is not None and len(df) > 0 else 0.0
+        
+        # Convert equity_curve and timestamps to lists for JSON serialization
+        equity_curve = results['equity_curve'] if isinstance(results['equity_curve'], list) else list(results['equity_curve'])
+        timestamps = results['timestamps'] if isinstance(results['timestamps'], list) else list(results['timestamps'])
+        timestamps_iso = [ts.isoformat() if hasattr(ts, 'isoformat') else str(ts) for ts in timestamps]
+        
         cursor = conn.cursor()
-        cursor.execute("""INSERT INTO backtest_runs (timestamp, symbol, agent_id, agent_name, test_period, agent_return, buy_hold_return, outperformance, total_trades, final_value, trades, portfolio_history, portfolio_dates) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (datetime.now().isoformat(), request.symbol, None, strategy.name, f"{start_date.date()} to {end_date.date()}", results['total_return_pct'], buy_hold_return, results['total_return_pct'] - buy_hold_return, results['fills_received'], results['final_equity'], json.dumps([]), json.dumps(results['equity_curve']), json.dumps([ts.isoformat() for ts in results['timestamps']])))
+        cursor.execute("""INSERT INTO backtest_runs (timestamp, symbol, agent_id, agent_name, test_period, agent_return, buy_hold_return, outperformance, total_trades, final_value, trades, portfolio_history, portfolio_dates) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (datetime.now().isoformat(), request.symbol, None, strategy.name, f"{start_date.date()} to {end_date.date()}", float(results['total_return_pct']), float(buy_hold_return), float(results['total_return_pct'] - buy_hold_return), int(results['fills_received']), float(results['final_equity']), json.dumps([]), json.dumps(equity_curve), json.dumps(timestamps_iso)))
         conn.commit()
-        return BacktestResponse(symbol=request.symbol, test_period=f"{start_date.date()} to {end_date.date()}", agent_return=results['total_return_pct'], buy_hold_return=buy_hold_return, outperformance=results['total_return_pct'] - buy_hold_return, total_trades=results['fills_received'], final_value=results['final_equity'], sharpe_ratio=results['sharpe_ratio'], sortino_ratio=results['sortino_ratio'], max_drawdown=results['max_drawdown_pct'], portfolio_dates=[ts.isoformat() for ts in results['timestamps']])
+        return BacktestResponse(symbol=request.symbol, test_period=f"{start_date.date()} to {end_date.date()}", agent_return=results['total_return_pct'], buy_hold_return=buy_hold_return, outperformance=results['total_return_pct'] - buy_hold_return, total_trades=results['fills_received'], final_value=results['final_equity'], sharpe_ratio=results['sharpe_ratio'], sortino_ratio=results['sortino_ratio'], max_drawdown=results['max_drawdown_pct'], value_at_risk_95=results.get('value_at_risk_95'), value_at_risk_99=results.get('value_at_risk_99'), conditional_var_95=results.get('conditional_var_95'), conditional_var_99=results.get('conditional_var_99'), trades=[], portfolio_history=equity_curve, portfolio_dates=timestamps_iso)
     except Exception as e:
         traceback.print_exc(); raise HTTPException(status_code=500, detail=str(e))
 
@@ -109,3 +115,37 @@ async def get_backtest_run_details(run_id: int, conn: sqlite3.Connection = Depen
         run['portfolio_dates'] = json.loads(run['portfolio_dates']) if run['portfolio_dates'] else []
         return BacktestRunResponse(**run)
     except Exception as e: traceback.print_exc(); raise HTTPException(status_code=500, detail="Failed to retrieve backtest run details.")
+
+@router.get("/compare_strategies")
+async def compare_strategies(symbol: str = "AAPL", start_date: Optional[str] = None, end_date: Optional[str] = None, conn: sqlite3.Connection = Depends(get_db)):
+    """Compare all available strategies on the same symbol and timeframe"""
+    try:
+        start = datetime.strptime(start_date, "%Y-%m-%d") if start_date else datetime.now() - timedelta(days=365)
+        end = datetime.strptime(end_date, "%Y-%m-%d") if end_date else datetime.now()
+        
+        strategies_to_compare = [
+            ("ma_cross", MovingAverageCrossStrategy([symbol], 20, 50), {}),
+            ("rsi", RSIStrategy([symbol], 14, 30, 70), {}),
+            ("momentum", MomentumStrategy([symbol], 20), {}),
+            ("buy_hold", BuyAndHoldStrategy([symbol]), {})
+        ]
+        
+        results = []
+        for strategy_id, strategy, params in strategies_to_compare:
+            backtester = Backtester([symbol], start, end, 100000.0, strategy)
+            result = backtester.run()
+            results.append({
+                "strategy": strategy_id,
+                "name": strategy.name,
+                "total_return": result['total_return_pct'],
+                "sharpe_ratio": result['sharpe_ratio'],
+                "sortino_ratio": result['sortino_ratio'],
+                "max_drawdown": result['max_drawdown_pct'],
+                "total_trades": result['fills_received'],
+                "final_value": result['final_equity']
+            })
+        
+        return {"symbol": symbol, "period": f"{start.date()} to {end.date()}", "results": results}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))

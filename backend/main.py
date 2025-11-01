@@ -148,6 +148,16 @@ if frontend_dir.exists():
     async def serve_backtest_page():
         """Serve the backtest page"""
         return FileResponse(frontend_dir / "backtest.html")
+    
+    @app.get("/compare")
+    async def serve_compare_page():
+        """Serve the strategy comparison page"""
+        return FileResponse(frontend_dir / "compare.html")
+    
+    @app.get("/lab")
+    async def serve_lab_page():
+        """Serve the financial laboratory page"""
+        return FileResponse(frontend_dir / "lab.html")
 else:
     logger.warning(f"Frontend directory not found at {frontend_dir}")
 
@@ -162,6 +172,10 @@ app.include_router(advanced_routes.router, prefix="/api")
 # Include institutional backtesting router
 from backend.api import backtest_routes
 app.include_router(backtest_routes.router, prefix="/api/v2", tags=["Institutional Backtesting"])
+
+# Include advanced tools router (Portfolio Optimization, Financial Modeling, Market Data Pipeline)
+from backend.api import advanced_tools_routes
+app.include_router(advanced_tools_routes.router, tags=["Advanced Tools"])
 
 def open_browser():
     """Open browser after a short delay to ensure server is running"""

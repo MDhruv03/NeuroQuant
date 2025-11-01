@@ -23,7 +23,7 @@ class DatabaseConfig:
 
 class APIConfig:
     """API server configuration"""
-    HOST: str = os.getenv("API_HOST", "0.0.0.0")
+    HOST: str = os.getenv("API_HOST", "127.0.0.1")
     PORT: int = int(os.getenv("API_PORT", "8000"))
     RELOAD: bool = os.getenv("API_RELOAD", "false").lower() == "true"
     WORKERS: int = int(os.getenv("API_WORKERS", "1"))

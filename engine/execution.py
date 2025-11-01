@@ -107,13 +107,13 @@ class ExecutionEngine:
             # Selling pushes price down  
             slippage_pct = -(impact_factor + abs(vol_factor))
         
-        return market_price * slippage_pct
+        return float(market_price * slippage_pct)
     
     def _calculate_commission(self, quantity: int, price: float) -> float:
         """Calculate commission with minimum"""
-        commission = quantity * price * self.commission_percent
+        commission = float(quantity) * float(price) * self.commission_percent
         # Minimum $1 commission
-        return max(commission, 1.0)
+        return float(max(commission, 1.0))
     
     def execute_market_order(self,
                             order: OrderEvent,
