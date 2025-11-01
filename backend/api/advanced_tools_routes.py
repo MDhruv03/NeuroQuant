@@ -141,12 +141,21 @@ async def optimize_portfolio(request: PortfolioOptimizationRequest):
         if not data_dict:
             raise HTTPException(status_code=400, detail="Failed to fetch data for symbols")
         
-        # Calculate returns
-        returns_data = {}
+        # Calculate returns - create DataFrame directly from dict of Series
+        returns_list = []
         for symbol, df in data_dict.items():
-            returns_data[symbol] = df['Close'].pct_change().dropna()
+            returns = df['Close'].pct_change().dropna()
+            returns.name = symbol
+            returns_list.append(returns)
         
-        returns_df = pd.DataFrame(returns_data)
+        # Concatenate all returns into a DataFrame
+        returns_df = pd.concat(returns_list, axis=1)
+        
+        # Drop any rows with NaN values
+        returns_df = returns_df.dropna()
+        
+        if returns_df.empty or len(returns_df) < 10:
+            raise HTTPException(status_code=400, detail="Insufficient data for optimization after cleaning")
         
         # Create optimizer
         optimizer = PortfolioOptimizer(returns_df, request.risk_free_rate)
@@ -193,9 +202,19 @@ async def calculate_efficient_frontier(request: PortfolioOptimizationRequest):
             request.end_date
         )
         
-        # Calculate returns
-        returns_data = {symbol: df['Close'].pct_change().dropna() for symbol, df in data_dict.items()}
-        returns_df = pd.DataFrame(returns_data)
+        # Calculate returns - create DataFrame directly from dict of Series
+        returns_list = []
+        for symbol, df in data_dict.items():
+            returns = df['Close'].pct_change().dropna()
+            returns.name = symbol
+            returns_list.append(returns)
+        
+        # Concatenate all returns into a DataFrame
+        returns_df = pd.concat(returns_list, axis=1)
+        returns_df = returns_df.dropna()
+        
+        if returns_df.empty or len(returns_df) < 10:
+            raise HTTPException(status_code=400, detail="Insufficient data for optimization after cleaning")
         
         # Create optimizer
         optimizer = PortfolioOptimizer(returns_df, request.risk_free_rate)

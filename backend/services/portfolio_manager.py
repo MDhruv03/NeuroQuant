@@ -206,7 +206,13 @@ class PortfolioManager:
         profit_factor = abs(sum(winning_trades) / sum(losing_trades)) if losing_trades and sum(losing_trades) != 0 else 0
         
         returns = [t['profit_loss_pct'] for t in closed_trades]
-        sharpe_ratio = (np.mean(returns) / np.std(returns)) * np.sqrt(252) if len(returns) > 1 else 0
+        # Sharpe Ratio: measures risk-adjusted return
+        # For per-trade returns: (Mean Return) / (Std Dev of Returns)
+        # Multiplied by sqrt(252) to annualize
+        if len(returns) > 1 and np.std(returns) > 0:
+            sharpe_ratio = (np.mean(returns) / np.std(returns)) * np.sqrt(252)
+        else:
+            sharpe_ratio = 0.0
         
         return {
             'total_trades': len(closed_trades),

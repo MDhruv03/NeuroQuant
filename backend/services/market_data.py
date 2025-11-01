@@ -47,7 +47,6 @@ class MarketDataProvider:
     """Handles market data fetching and preprocessing"""
     
     def __init__(self):
-        pass
         self.cache_enabled = config.market_data.CACHE_ENABLED
         self.cache = DataCache(ttl=config.market_data.CACHE_TTL) if self.cache_enabled else None
         logger.info("MarketDataProvider initialized")

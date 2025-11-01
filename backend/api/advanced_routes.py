@@ -64,6 +64,7 @@ async def optimize_strategy(request: OptimizationRequest):
             # Simulate performance metrics
             base_return = np.random.uniform(-0.1, 0.4)
             volatility = np.random.uniform(0.1, 0.3)
+            # Simplified Sharpe for simulation: Return / Volatility
             sharpe = base_return / volatility if volatility > 0 else 0
             
             return {

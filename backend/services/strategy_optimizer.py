@@ -7,6 +7,7 @@ from typing import Dict, List, Tuple, Any, Callable
 from dataclasses import dataclass
 import itertools
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from scipy.stats import norm
 
 
 @dataclass

@@ -357,7 +357,7 @@ class PortfolioOptimizer:
             if asset in self.assets:
                 idx = self.assets.index(asset)
                 confidence = view_confidences.get(asset, 0.5)
-                omega_diag.append(float(tau * self.cov_matrix.iloc[idx, idx] / confidence))
+                omega_diag.append(float(tau * self.cov_matrix.values[idx, idx] / confidence))
         
         Omega = np.diag(omega_diag)
         
@@ -388,13 +388,13 @@ class PortfolioOptimizer:
         stats = {
             'annualized_returns': self.mean_returns.to_dict(),
             'annualized_volatility': {
-                asset: float(np.sqrt(self.cov_matrix.loc[asset, asset]))
-                for asset in self.assets
+                asset: float(np.sqrt(self.cov_matrix.values[i, i]))
+                for i, asset in enumerate(self.assets)
             },
             'sharpe_ratios': {
-                asset: float((float(self.mean_returns[asset]) - self.risk_free_rate) / 
-                           float(np.sqrt(self.cov_matrix.loc[asset, asset])))
-                for asset in self.assets
+                asset: float((float(self.mean_returns.iloc[i]) - self.risk_free_rate) / 
+                           float(np.sqrt(self.cov_matrix.values[i, i])))
+                for i, asset in enumerate(self.assets)
             }
         }
         return stats

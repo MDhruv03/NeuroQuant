@@ -331,10 +331,11 @@ async def get_portfolio_summary(db: sqlite3.Connection = Depends(get_db)):
         win_rate = winning_runs / len(runs) if runs else 0
         
         # Calculate Sharpe ratio from returns
-        if len(returns) > 1:
-            sharpe_ratio = np.mean(returns) / np.std(returns) if np.std(returns) > 0 else 0
+        # Sharpe = (Mean Return / Std Dev) * sqrt(252) for annualization
+        if len(returns) > 1 and np.std(returns) > 0:
+            sharpe_ratio = (np.mean(returns) / np.std(returns)) * np.sqrt(252)
         else:
-            sharpe_ratio = 0
+            sharpe_ratio = 0.0
         
         # Calculate max drawdown
         portfolio_values = [r[3] for r in runs]

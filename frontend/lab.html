@@ -138,15 +138,15 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
-                        <h4 class="text-xs text-neutral-500 mb-3">OPTIMAL WEIGHTS</h4>
-                        <div style="height: 300px;">
+                    <div class="bg-gradient-to-br from-neutral-900 to-neutral-950 border-2 border-neutral-800 hover:border-neutral-700 rounded-xl p-5 shadow-xl transition-all">
+                        <h4 class="text-xs text-green-500 font-bold mb-4 tracking-wider">[ OPTIMAL WEIGHTS ]</h4>
+                        <div style="height: 320px;">
                             <canvas id="weightsChart"></canvas>
                         </div>
                     </div>
-                    <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
-                        <h4 class="text-xs text-neutral-500 mb-3">EFFICIENT FRONTIER</h4>
-                        <div style="height: 300px;">
+                    <div class="bg-gradient-to-br from-neutral-900 to-neutral-950 border-2 border-neutral-800 hover:border-neutral-700 rounded-xl p-5 shadow-xl transition-all">
+                        <h4 class="text-xs text-green-500 font-bold mb-4 tracking-wider">[ EFFICIENT FRONTIER ]</h4>
+                        <div style="height: 320px;">
                             <canvas id="frontierChart"></canvas>
                         </div>
                     </div>
@@ -511,7 +511,16 @@
                     })
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
+                console.log('Optimization response:', data);
+                
+                if (!data.weights) {
+                    throw new Error('No weights returned from optimization');
+                }
                 
                 // Display results
                 document.getElementById('opt-results').classList.remove('hidden');
@@ -519,27 +528,123 @@
                 document.getElementById('opt-vol').textContent = (data.volatility * 100).toFixed(2) + '%';
                 document.getElementById('opt-sharpe').textContent = data.sharpe_ratio.toFixed(2);
 
+                // Wait for layout to complete before creating chart
+                await new Promise(resolve => setTimeout(resolve, 100));
+
                 // Weights chart
                 const ctx = document.getElementById('weightsChart').getContext('2d');
-                if (window.weightsChart) window.weightsChart.destroy();
+                if (window.weightsChart && typeof window.weightsChart.destroy === 'function') {
+                    window.weightsChart.destroy();
+                }
+                
+                // Professional color palette with gradients
+                const colors = [
+                    '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6',
+                    '#06b6d4', '#f97316', '#ec4899', '#14b8a6', '#6366f1'
+                ];
+                
+                const weights = Object.entries(data.weights).sort((a, b) => b[1] - a[1]);
+                
                 window.weightsChart = new Chart(ctx, {
-                    type: 'pie',
+                    type: 'doughnut',
                     data: {
-                        labels: Object.keys(data.weights),
+                        labels: weights.map(([symbol]) => symbol),
                         datasets: [{
-                            data: Object.values(data.weights).map(v => v * 100),
-                            backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6']
+                            data: weights.map(([, weight]) => weight * 100),
+                            backgroundColor: colors.slice(0, weights.length),
+                            borderColor: '#0a0a0a',
+                            borderWidth: 3,
+                            hoverBorderColor: '#10b981',
+                            hoverBorderWidth: 4,
+                            hoverOffset: 10
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        layout: {
+                            padding: 10
+                        },
                         plugins: {
-                            legend: {position: 'right', labels: {color: '#a3a3a3'}}
+                            legend: {
+                                position: 'right',
+                                align: 'center',
+                                labels: {
+                                    color: '#e5e5e5',
+                                    font: {
+                                        size: 12, 
+                                        family: 'monospace', 
+                                        weight: '600'
+                                    },
+                                    padding: 14,
+                                    boxWidth: 14,
+                                    boxHeight: 14,
+                                    generateLabels: function(chart) {
+                                        const data = chart.data;
+                                        return data.labels.map((label, i) => {
+                                            const value = data.datasets[0].data[i];
+                                            return {
+                                                text: `${label}  ${value.toFixed(1)}%`,
+                                                fillStyle: data.datasets[0].backgroundColor[i],
+                                                strokeStyle: data.datasets[0].borderColor,
+                                                lineWidth: 2,
+                                                hidden: false,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.95)',
+                                titleColor: '#10b981',
+                                titleFont: {
+                                    size: 14,
+                                    weight: 'bold',
+                                    family: 'monospace'
+                                },
+                                bodyColor: '#f5f5f5',
+                                bodyFont: {
+                                    size: 13,
+                                    family: 'monospace',
+                                    weight: '500'
+                                },
+                                borderColor: '#10b981',
+                                borderWidth: 2,
+                                padding: 14,
+                                displayColors: true,
+                                boxWidth: 14,
+                                boxHeight: 14,
+                                boxPadding: 8,
+                                callbacks: {
+                                    title: function(context) {
+                                        return context[0].label;
+                                    },
+                                    label: function(context) {
+                                        const percentage = context.parsed.toFixed(2);
+                                        const weight = (context.parsed / 100).toFixed(4);
+                                        return [
+                                            `Allocation: ${percentage}%`,
+                                            `Weight: ${weight}`
+                                        ];
+                                    },
+                                    afterLabel: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const contribution = (context.parsed / total * 100).toFixed(1);
+                                        return `\nContribution: ${contribution}% of portfolio`;
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '65%',
+                        animation: {
+                            animateRotate: true,
+                            animateScale: true
                         }
                     }
                 });
             } catch (error) {
+                console.error('Optimization error:', error);
                 alert('Error: ' + error.message);
             }
         }
@@ -559,43 +664,207 @@
                     })
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
+                console.log('Efficient frontier response:', data);
                 
-                // Frontier chart
+                if (!data.efficient_frontier || !data.monte_carlo) {
+                    throw new Error('Invalid frontier data received');
+                }
+                
+                // Make results visible
+                document.getElementById('opt-results').classList.remove('hidden');
+                
+                // Wait for layout to complete
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Frontier chart - Find optimal portfolio
+                const optimalPortfolio = data.efficient_frontier.reduce((max, p) => 
+                    (p.sharpe_ratio || 0) > (max.sharpe_ratio || 0) ? p : max
+                , data.efficient_frontier[0]);
+                
                 const ctx = document.getElementById('frontierChart').getContext('2d');
-                if (window.frontierChart) window.frontierChart.destroy();
+                
+                // Create gradient for frontier line
+                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, 'rgba(16, 185, 129, 1)');
+                gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.9)');
+                gradient.addColorStop(1, 'rgba(52, 211, 153, 0.8)');
+                
+                if (window.frontierChart && typeof window.frontierChart.destroy === 'function') {
+                    window.frontierChart.destroy();
+                }
                 window.frontierChart = new Chart(ctx, {
                     type: 'scatter',
                     data: {
                         datasets: [
                             {
-                                label: 'Efficient Frontier',
-                                data: data.efficient_frontier.map(p => ({x: p.volatility * 100, y: p.return * 100})),
-                                borderColor: '#22c55e',
-                                backgroundColor: 'rgba(34, 197, 94, 0.1)'
+                                label: 'Random Portfolios',
+                                data: data.monte_carlo.slice(0, 1500).map(p => ({
+                                    x: p.volatility * 100, 
+                                    y: p.return * 100
+                                })),
+                                backgroundColor: 'rgba(100, 116, 139, 0.12)',
+                                borderColor: 'rgba(100, 116, 139, 0)',
+                                pointRadius: 1.5,
+                                pointHoverRadius: 0,
+                                order: 3
                             },
                             {
-                                label: 'Random Portfolios',
-                                data: data.monte_carlo.slice(0, 500).map(p => ({x: p.volatility * 100, y: p.return * 100})),
-                                borderColor: '#3b82f6',
-                                backgroundColor: 'rgba(59, 130, 246, 0.3)',
-                                pointRadius: 2
+                                label: 'Efficient Frontier',
+                                data: data.efficient_frontier.map(p => ({
+                                    x: p.volatility * 100, 
+                                    y: p.return * 100
+                                })),
+                                borderColor: gradient,
+                                backgroundColor: 'transparent',
+                                showLine: true,
+                                borderWidth: 4,
+                                pointRadius: 0,
+                                pointHoverRadius: 0,
+                                tension: 0.4,
+                                fill: false,
+                                order: 2
+                            },
+                            {
+                                label: 'Optimal Portfolio',
+                                data: [{
+                                    x: optimalPortfolio.volatility * 100,
+                                    y: optimalPortfolio.return * 100
+                                }],
+                                backgroundColor: '#fbbf24',
+                                borderColor: '#f59e0b',
+                                pointRadius: 9,
+                                pointHoverRadius: 11,
+                                pointStyle: 'star',
+                                borderWidth: 2,
+                                order: 1
                             }
                         ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'point',
+                            intersect: true
+                        },
                         plugins: {
-                            legend: {labels: {color: '#a3a3a3'}}
+                            legend: {
+                                position: 'top',
+                                align: 'center',
+                                labels: {
+                                    color: '#e5e5e5',
+                                    font: {
+                                        size: 11, 
+                                        family: 'monospace',
+                                        weight: '600'
+                                    },
+                                    padding: 14,
+                                    usePointStyle: true,
+                                    boxWidth: 10,
+                                    boxHeight: 10,
+                                    filter: function(item) {
+                                        return item.text !== 'Efficient Frontier';
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                enabled: true,
+                                filter: function(tooltipItem) {
+                                    return tooltipItem.datasetIndex === 2;
+                                },
+                                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                                titleColor: '#fbbf24',
+                                titleFont: {
+                                    size: 12,
+                                    weight: 'bold',
+                                    family: 'monospace'
+                                },
+                                bodyColor: '#f5f5f5',
+                                bodyFont: {
+                                    size: 11,
+                                    family: 'monospace'
+                                },
+                                borderColor: '#fbbf24',
+                                borderWidth: 2,
+                                padding: 12,
+                                displayColors: false,
+                                callbacks: {
+                                    title: function() {
+                                        return 'Optimal Portfolio';
+                                    },
+                                    label: function(context) {
+                                        return `Return: ${context.parsed.y.toFixed(2)}% | Risk: ${context.parsed.x.toFixed(2)}%`;
+                                    }
+                                }
+                            }
                         },
                         scales: {
-                            x: {ticks: {color: '#a3a3a3'}, title: {display: true, text: 'Volatility (%)', color: '#a3a3a3'}},
-                            y: {ticks: {color: '#a3a3a3'}, title: {display: true, text: 'Return (%)', color: '#a3a3a3'}}
+                            x: {
+                                grid: {
+                                    color: 'rgba(64, 64, 64, 0.3)',
+                                    lineWidth: 1,
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#a3a3a3',
+                                    font: {
+                                        size: 10, 
+                                        family: 'monospace'
+                                    },
+                                    callback: function(value) {
+                                        return value.toFixed(0) + '%';
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Risk (Volatility)',
+                                    color: '#737373',
+                                    font: {
+                                        size: 11, 
+                                        weight: 'bold', 
+                                        family: 'monospace'
+                                    },
+                                    padding: {top: 8}
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: 'rgba(64, 64, 64, 0.3)',
+                                    lineWidth: 1,
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#a3a3a3',
+                                    font: {
+                                        size: 10, 
+                                        family: 'monospace'
+                                    },
+                                    callback: function(value) {
+                                        return value.toFixed(0) + '%';
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Expected Return',
+                                    color: '#737373',
+                                    font: {
+                                        size: 11, 
+                                        weight: 'bold', 
+                                        family: 'monospace'
+                                    },
+                                    padding: {bottom: 8}
+                                }
+                            }
                         }
                     }
                 });
             } catch (error) {
+                console.error('Frontier calculation error:', error);
                 alert('Error: ' + error.message);
             }
         }
@@ -694,27 +963,99 @@
                 document.getElementById('mc-p95').textContent = '$' + data.percentiles.p95.toFixed(2);
                 document.getElementById('mc-prob').textContent = (data.probability_profit * 100).toFixed(1) + '%';
 
-                // Chart
+                // Wait for layout
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Chart - Show only 10 sample paths for clarity
                 const ctx = document.getElementById('mcChart').getContext('2d');
-                if (window.mcChart) window.mcChart.destroy();
+                if (window.mcChart && typeof window.mcChart.destroy === 'function') {
+                    window.mcChart.destroy();
+                }
+                
+                const pathsToShow = Math.min(10, data.sample_paths.length);
+                const colors = [
+                    '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6',
+                    '#06b6d4', '#f97316', '#ec4899', '#14b8a6', '#6366f1'
+                ];
+                
                 window.mcChart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        datasets: data.sample_paths.map((path, i) => ({
-                            label: `Path ${i + 1}`,
-                            data: path,
-                            borderColor: `hsl(${i * 36}, 70%, 50%)`,
-                            borderWidth: 1,
-                            pointRadius: 0
+                        datasets: data.sample_paths.slice(0, pathsToShow).map((path, i) => ({
+                            label: `Simulation ${i + 1}`,
+                            data: path.map((price, day) => ({x: day, y: price})),
+                            borderColor: colors[i],
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.1
                         }))
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {legend: {display: false}},
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                                titleColor: '#10b981',
+                                bodyColor: '#f5f5f5',
+                                borderColor: '#404040',
+                                borderWidth: 1,
+                                padding: 10,
+                                callbacks: {
+                                    title: function(context) {
+                                        return `Day ${context[0].parsed.x}`;
+                                    },
+                                    label: function(context) {
+                                        return `${context.dataset.label}: $${context.parsed.y.toFixed(2)}`;
+                                    }
+                                }
+                            }
+                        },
                         scales: {
-                            x: {ticks: {color: '#a3a3a3'}},
-                            y: {ticks: {color: '#a3a3a3'}}
+                            x: {
+                                type: 'linear',
+                                grid: {
+                                    color: 'rgba(64, 64, 64, 0.3)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#a3a3a3',
+                                    font: {size: 10, family: 'monospace'}
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Days',
+                                    color: '#737373',
+                                    font: {size: 11, weight: 'bold', family: 'monospace'}
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: 'rgba(64, 64, 64, 0.3)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#a3a3a3',
+                                    font: {size: 10, family: 'monospace'},
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(0);
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Price',
+                                    color: '#737373',
+                                    font: {size: 11, weight: 'bold', family: 'monospace'}
+                                }
+                            }
                         }
                     }
                 });
@@ -826,7 +1167,9 @@
             if (streamData.length > 100) streamData.shift();
 
             const ctx = document.getElementById('streamChart').getContext('2d');
-            if (streamChart) streamChart.destroy();
+            if (streamChart && typeof streamChart.destroy === 'function') {
+                streamChart.destroy();
+            }
             streamChart = new Chart(ctx, {
                 type: 'line',
                 data: {

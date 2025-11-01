@@ -142,9 +142,9 @@
         document.getElementById('returnStatus').textContent = avgReturn >= 0 ? 'Profitable' : 'Loss';
         document.getElementById('returnStatus').className = avgReturn >= 0 ? 'text-xs text-green-500' : 'text-xs text-red-500';
 
-        const validSharpes = runs.filter(r => r.buy_hold_return !== null && !isNaN(r.buy_hold_return));
+        const validSharpes = runs.filter(r => r.sharpe_ratio !== null && !isNaN(r.sharpe_ratio));
         const avgSharpe = validSharpes.length > 0 
-            ? validSharpes.reduce((sum, r) => sum + (r.buy_hold_return || 0), 0) / validSharpes.length 
+            ? validSharpes.reduce((sum, r) => sum + (r.sharpe_ratio || 0), 0) / validSharpes.length 
             : 0;
         document.getElementById('avgSharpe').textContent = avgSharpe.toFixed(2);
         
@@ -168,7 +168,7 @@
             const returnClass = run.agent_return >= 0 ? 'text-green-500' : 'text-red-500';
             const date = new Date(run.timestamp).toLocaleDateString();
             
-            return '<tr class="border-b border-neutral-900"><td class="py-2">' + date + '</td><td class="py-2">' + run.symbol + '</td><td class="py-2">' + (run.agent_name || 'Unknown') + '</td><td class="py-2 text-right ' + returnClass + '">' + run.agent_return.toFixed(2) + '%</td><td class="py-2 text-right">' + (run.buy_hold_return || 0).toFixed(2) + '</td><td class="py-2 text-right">' + (run.total_trades || 0) + '</td><td class="py-2 text-right">$' + (run.final_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td></tr>';
+            return '<tr class="border-b border-neutral-900"><td class="py-2">' + date + '</td><td class="py-2">' + run.symbol + '</td><td class="py-2">' + (run.agent_name || 'Unknown') + '</td><td class="py-2 text-right ' + returnClass + '">' + run.agent_return.toFixed(2) + '%</td><td class="py-2 text-right">' + (run.sharpe_ratio || 0).toFixed(2) + '</td><td class="py-2 text-right">' + (run.total_trades || 0) + '</td><td class="py-2 text-right">$' + (run.final_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td></tr>';
         }).join('');
     }
 

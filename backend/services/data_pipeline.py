@@ -160,16 +160,15 @@ class DataQualityValidator:
             max_ohlc = df[['Open', 'Low', 'Close']].max(axis=1)
             min_ohlc = df[['Open', 'High', 'Close']].min(axis=1)
             
-            invalid_high = df['High'] < max_ohlc
-            invalid_low = df['Low'] > min_ohlc
+            # Compare using values to avoid index alignment issues
+            invalid_high = df['High'].values < max_ohlc.values
+            invalid_low = df['Low'].values > min_ohlc.values
             
-            high_result = invalid_high.sum()
-            high_count = int(high_result.iloc[0]) if hasattr(high_result, 'iloc') else int(high_result)
+            high_count = int(invalid_high.sum())
             if high_count > 0:
                 issues.append(f"High price lower than other prices: {high_count} rows")
                 
-            low_result = invalid_low.sum()
-            low_count = int(low_result.iloc[0]) if hasattr(low_result, 'iloc') else int(low_result)
+            low_count = int(invalid_low.sum())
             if low_count > 0:
                 issues.append(f"Low price higher than other prices: {low_count} rows")
         
@@ -200,8 +199,8 @@ class DataQualityValidator:
         """Clean and fix common data issues"""
         df = df.copy()
         
-        # Forward fill missing values (max 5 days)
-        df = df.fillna(method='ffill', limit=5)
+        # Forward fill missing values (max 5 days) - using Pandas 2.x syntax
+        df = df.ffill(limit=5)
         
         # Remove rows with remaining nulls
         df = df.dropna()
