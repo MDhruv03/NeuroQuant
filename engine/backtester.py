@@ -62,6 +62,8 @@ class Backtester:
         self.orders_placed = 0
         self.fills_received = 0
         self.bars_processed = 0
+        self.risk_violations_count = 0
+        self.last_risk_violation = None
         
         # Results
         self.results: Dict = {}
@@ -86,7 +88,12 @@ class Backtester:
         
         # Check risk limits
         if not self.risk_manager.check_all(self.portfolio, current_prices):
-            print(f"⚠️  Risk check failed: {self.risk_manager.violations}")
+            # Only log first occurrence or every 50th occurrence to avoid spam
+            self.risk_violations_count += 1
+            current_violation = str(self.risk_manager.violations)
+            if current_violation != self.last_risk_violation or self.risk_violations_count % 50 == 0:
+                print(f"⚠️  Risk check failed ({self.risk_violations_count}x): {self.risk_manager.violations}")
+                self.last_risk_violation = current_violation
             return
         
         # Determine order side and quantity
@@ -254,14 +261,12 @@ class Backtester:
         return self.results
     
     def _calculate_results(self):
-        """Calculate performance metrics"""
+        """Calculate performance metrics for both main and shadow portfolios"""
         final_prices = self.data_handler.get_latest_prices()
         final_equity = self.portfolio.get_equity(final_prices)
         
-        # Basic metrics
+        # Main portfolio metrics
         total_return = (final_equity - self.initial_capital) / self.initial_capital
-        
-        # Advanced metrics
         sharpe = self.portfolio.calculate_sharpe_ratio()
         sortino = self.portfolio.calculate_sortino_ratio()
         max_dd = self.portfolio.max_drawdown
@@ -269,20 +274,38 @@ class Backtester:
         # Calculate VaR and CVaR from equity curve
         import numpy as np
         if len(self.portfolio.equity_curve) > 1:
-            returns = np.diff(self.portfolio.equity_curve) / self.portfolio.equity_curve[:-1]
-            var_95 = float(np.percentile(returns, 5) * 100)  # 5th percentile (95% VaR)
-            var_99 = float(np.percentile(returns, 1) * 100)  # 1st percentile (99% VaR)
-            cvar_95 = float(returns[returns <= np.percentile(returns, 5)].mean() * 100) if len(returns[returns <= np.percentile(returns, 5)]) > 0 else 0.0
-            cvar_99 = float(returns[returns <= np.percentile(returns, 1)].mean() * 100) if len(returns[returns <= np.percentile(returns, 1)]) > 0 else 0.0
+            # Calculate returns from equity curve
+            equity_array = np.array(self.portfolio.equity_curve)
+            returns = np.diff(equity_array) / equity_array[:-1]
+            
+            # Calculate VaR (Value at Risk) - 5th and 1st percentiles
+            var_95 = float(np.percentile(returns, 5) * 100)
+            var_99 = float(np.percentile(returns, 1) * 100)
+            
+            # Calculate CVaR (Conditional VaR) - average of returns below VaR threshold
+            returns_below_var95 = returns[returns <= np.percentile(returns, 5)]
+            returns_below_var99 = returns[returns <= np.percentile(returns, 1)]
+            
+            cvar_95 = float(returns_below_var95.mean() * 100) if len(returns_below_var95) > 0 else var_95
+            cvar_99 = float(returns_below_var99.mean() * 100) if len(returns_below_var99) > 0 else var_99
         else:
             var_95 = var_99 = cvar_95 = cvar_99 = 0.0
         
-        # Trade statistics
         num_trades = len(self.portfolio.fill_history)
-        
-        # Ensure equity_curve is a list and timestamps are datetime objects
         equity_curve = list(self.portfolio.equity_curve) if not isinstance(self.portfolio.equity_curve, list) else self.portfolio.equity_curve
         timestamps = list(self.portfolio.timestamps) if not isinstance(self.portfolio.timestamps, list) else self.portfolio.timestamps
+        
+        # Format fill history for response
+        trades = []
+        for fill in self.portfolio.fill_history:
+            trades.append({
+                'timestamp': fill.timestamp.isoformat() if hasattr(fill.timestamp, 'isoformat') else str(fill.timestamp),
+                'symbol': fill.symbol,
+                'action': fill.side.value,  # OrderSide enum to string (BUY/SELL)
+                'quantity': fill.quantity,
+                'price': float(fill.fill_price),
+                'commission': float(fill.commission)
+            })
         
         self.results = {
             'initial_capital': self.initial_capital,
@@ -305,30 +328,94 @@ class Backtester:
             'total_commission': float(self.portfolio.total_commission_paid),
             'total_slippage': float(self.portfolio.total_slippage_cost),
             'equity_curve': equity_curve,
-            'timestamps': timestamps
+            'timestamps': timestamps,
+            'trades': trades
         }
+        
+        # Add shadow portfolio metrics if enabled
+        if self.portfolio.enable_shadow:
+            shadow_final_equity = self.portfolio.get_shadow_equity(final_prices)
+            shadow_total_return = (shadow_final_equity - self.initial_capital) / self.initial_capital
+            shadow_sharpe = self.portfolio.calculate_sharpe_ratio(is_shadow=True)
+            shadow_sortino = self.portfolio.calculate_sortino_ratio(is_shadow=True)
+            
+            # Calculate shadow VaR and CVaR
+            if len(self.portfolio.shadow_equity_curve) > 1:
+                shadow_equity_array = np.array(self.portfolio.shadow_equity_curve)
+                shadow_returns = np.diff(shadow_equity_array) / shadow_equity_array[:-1]
+                
+                shadow_var_95 = float(np.percentile(shadow_returns, 5) * 100)
+                shadow_var_99 = float(np.percentile(shadow_returns, 1) * 100)
+                
+                shadow_returns_below_var95 = shadow_returns[shadow_returns <= np.percentile(shadow_returns, 5)]
+                shadow_returns_below_var99 = shadow_returns[shadow_returns <= np.percentile(shadow_returns, 1)]
+                
+                shadow_cvar_95 = float(shadow_returns_below_var95.mean() * 100) if len(shadow_returns_below_var95) > 0 else shadow_var_95
+                shadow_cvar_99 = float(shadow_returns_below_var99.mean() * 100) if len(shadow_returns_below_var99) > 0 else shadow_var_99
+            else:
+                shadow_var_95 = shadow_var_99 = shadow_cvar_95 = shadow_cvar_99 = 0.0
+            
+            shadow_equity_curve = list(self.portfolio.shadow_equity_curve) if not isinstance(self.portfolio.shadow_equity_curve, list) else self.portfolio.shadow_equity_curve
+            
+            self.results['shadow'] = {
+                'final_equity': float(shadow_final_equity),
+                'total_return': float(shadow_total_return),
+                'total_return_pct': float(shadow_total_return * 100),
+                'sharpe_ratio': float(shadow_sharpe) if shadow_sharpe is not None else 0.0,
+                'sortino_ratio': float(shadow_sortino) if shadow_sortino is not None else 0.0,
+                'value_at_risk_95': shadow_var_95,
+                'value_at_risk_99': shadow_var_99,
+                'conditional_var_95': shadow_cvar_95,
+                'conditional_var_99': shadow_cvar_99,
+                'num_trades': int(len(self.portfolio.shadow_fill_history)),
+                'total_commission': float(self.portfolio.shadow_total_commission),
+                'equity_curve': shadow_equity_curve
+            }
+            
+            # Calculate performance differential
+            self.results['comparison'] = {
+                'equity_difference': float(final_equity - shadow_final_equity),
+                'return_difference_pct': float((total_return - shadow_total_return) * 100),
+                'main_outperformed': bool(final_equity > shadow_final_equity)
+            }
     
     def _print_results(self):
-        """Print backtest results"""
+        """Print backtest results including shadow portfolio comparison"""
         print("\n" + "=" * 60)
         print("📊 BACKTEST RESULTS")
         print("=" * 60)
         
-        print(f"\n💰 Returns:")
+        print(f"\n💰 Main Portfolio Returns:")
         print(f"  Initial Capital:    ${self.results['initial_capital']:>12,.2f}")
         print(f"  Final Equity:       ${self.results['final_equity']:>12,.2f}")
         print(f"  Total Return:       {self.results['total_return_pct']:>12.2f}%")
         
-        print(f"\n📈 Risk Metrics:")
+        print(f"\n📈 Main Portfolio Risk Metrics:")
         print(f"  Sharpe Ratio:       {self.results['sharpe_ratio']:>12.2f}")
         print(f"  Sortino Ratio:      {self.results['sortino_ratio']:>12.2f}")
         print(f"  Max Drawdown:       {self.results['max_drawdown_pct']:>12.2f}%")
+        
+        # Print shadow portfolio comparison if enabled
+        if 'shadow' in self.results:
+            print(f"\n🌑 Shadow Portfolio (Opposite Trades):")
+            print(f"  Final Equity:       ${self.results['shadow']['final_equity']:>12,.2f}")
+            print(f"  Total Return:       {self.results['shadow']['total_return_pct']:>12.2f}%")
+            print(f"  Sharpe Ratio:       {self.results['shadow']['sharpe_ratio']:>12.2f}")
+            print(f"  Sortino Ratio:      {self.results['shadow']['sortino_ratio']:>12.2f}")
+            
+            print(f"\n⚖️  Comparison:")
+            print(f"  Equity Difference:  ${self.results['comparison']['equity_difference']:>12,.2f}")
+            print(f"  Return Difference:  {self.results['comparison']['return_difference_pct']:>12.2f}%")
+            print(f"  Main Outperformed:  {'✅ Yes' if self.results['comparison']['main_outperformed'] else '❌ No'}")
         
         print(f"\n🔄 Trading Activity:")
         print(f"  Signals Generated:  {self.results['signals_generated']:>12,}")
         print(f"  Orders Placed:      {self.results['orders_placed']:>12,}")
         print(f"  Fills Received:     {self.results['fills_received']:>12,}")
         print(f"  Bars Processed:     {self.results['bars_processed']:>12,}")
+        
+        if self.risk_violations_count > 0:
+            print(f"  Risk Violations:    {self.risk_violations_count:>12,}")
         
         print(f"\n💸 Costs:")
         print(f"  Total Commission:   ${self.results['total_commission']:>12,.2f}")

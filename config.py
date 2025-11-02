@@ -54,8 +54,7 @@ class RedisConfig:
 
 class ModelConfig:
     """Model training and persistence configuration"""
-    SAVE_DIR: Path = BASE_DIR / os.getenv("MODEL_SAVE_DIR", "models")
-    CHECKPOINT_DIR: Path = BASE_DIR / os.getenv("MODEL_CHECKPOINT_DIR", "checkpoints")
+
     AUTO_SAVE: bool = os.getenv("MODEL_AUTO_SAVE", "true").lower() == "true"
     SAVE_INTERVAL: int = int(os.getenv("MODEL_SAVE_INTERVAL", "1000"))
     

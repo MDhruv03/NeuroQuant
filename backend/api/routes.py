@@ -19,10 +19,32 @@ class BacktestRequest(BaseModel):
     symbol: str; start_date: Optional[str] = None; end_date: Optional[str] = None
     strategy: str = "ma_cross"; strategy_params: Optional[Dict] = None
 
+class ShadowMetrics(BaseModel):
+    final_equity: float
+    total_return_pct: float
+    sharpe_ratio: float
+    sortino_ratio: float
+    equity_curve: List[float]
+    num_trades: int
+    total_commission: float
+
+class ComparisonMetrics(BaseModel):
+    equity_difference: float
+    return_difference_pct: float
+    main_outperformed: bool
+
 class BacktestResponse(BaseModel):
     symbol: str; test_period: str; agent_return: float; buy_hold_return: float
     outperformance: float; total_trades: int; final_value: float; sharpe_ratio: float
     sortino_ratio: float; max_drawdown: float; portfolio_dates: List[str]
+    value_at_risk_95: Optional[float] = None
+    value_at_risk_99: Optional[float] = None
+    conditional_var_95: Optional[float] = None
+    conditional_var_99: Optional[float] = None
+    trades: List = []
+    portfolio_history: List[float] = []
+    shadow: Optional[ShadowMetrics] = None
+    comparison: Optional[ComparisonMetrics] = None
 
 class StrategyCreateRequest(BaseModel):
     name: str; type: str; parameters: Dict
@@ -53,23 +75,106 @@ async def run_backtest(request: BacktestRequest, conn: sqlite3.Connection = Depe
         backtester = Backtester(symbols, start_date, end_date, 100000.0, strategy)
         results = backtester.run()
         df = backtester.data_handler.data.get(request.symbol)
-        buy_hold_return = float((float(df.iloc[-1]['Close']) / float(df.iloc[0]['Close']) - 1) * 100) if df is not None and len(df) > 0 else 0.0
+        # Fix pandas FutureWarning by using .iloc[0] for single element access
+        close_last = float(df.iloc[-1]['Close'].iloc[0]) if hasattr(df.iloc[-1]['Close'], 'iloc') else float(df.iloc[-1]['Close'])
+        close_first = float(df.iloc[0]['Close'].iloc[0]) if hasattr(df.iloc[0]['Close'], 'iloc') else float(df.iloc[0]['Close'])
+        buy_hold_return = float((close_last / close_first - 1) * 100) if df is not None and len(df) > 0 else 0.0
         
         # Convert equity_curve and timestamps to lists for JSON serialization
         equity_curve = results['equity_curve'] if isinstance(results['equity_curve'], list) else list(results['equity_curve'])
         timestamps = results['timestamps'] if isinstance(results['timestamps'], list) else list(results['timestamps'])
         timestamps_iso = [ts.isoformat() if hasattr(ts, 'isoformat') else str(ts) for ts in timestamps]
         
+        # Build shadow and comparison data if available
+        shadow_data = None
+        comparison_data = None
+        if 'shadow' in results and results['shadow']:
+            shadow = results['shadow']
+            shadow_equity_curve = shadow['equity_curve'] if isinstance(shadow['equity_curve'], list) else list(shadow['equity_curve'])
+            shadow_data = ShadowMetrics(
+                final_equity=shadow['final_equity'],
+                total_return_pct=shadow['total_return_pct'],
+                sharpe_ratio=shadow['sharpe_ratio'],
+                sortino_ratio=shadow['sortino_ratio'],
+                equity_curve=shadow_equity_curve,
+                num_trades=shadow['num_trades'],
+                total_commission=shadow['total_commission']
+            )
+        if 'comparison' in results and results['comparison']:
+            comp = results['comparison']
+            comparison_data = ComparisonMetrics(
+                equity_difference=comp['equity_difference'],
+                return_difference_pct=comp['return_difference_pct'],
+                main_outperformed=comp['main_outperformed']
+            )
+        
         cursor = conn.cursor()
-        cursor.execute("""INSERT INTO backtest_runs (timestamp, symbol, agent_id, agent_name, test_period, agent_return, buy_hold_return, outperformance, total_trades, final_value, trades, portfolio_history, portfolio_dates) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (datetime.now().isoformat(), request.symbol, None, strategy.name, f"{start_date.date()} to {end_date.date()}", float(results['total_return_pct']), float(buy_hold_return), float(results['total_return_pct'] - buy_hold_return), int(results['fills_received']), float(results['final_equity']), json.dumps([]), json.dumps(equity_curve), json.dumps(timestamps_iso)))
+        cursor.execute("""INSERT INTO backtest_runs (timestamp, symbol, agent_id, agent_name, test_period, agent_return, buy_hold_return, outperformance, total_trades, final_value, trades, portfolio_history, portfolio_dates) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (datetime.now().isoformat(), request.symbol, None, strategy.name, f"{start_date.date()} to {end_date.date()}", float(results['total_return_pct']), float(buy_hold_return), float(results['total_return_pct'] - buy_hold_return), int(results['fills_received']), float(results['final_equity']), json.dumps(results.get('trades', [])), json.dumps(equity_curve), json.dumps(timestamps_iso)))
         conn.commit()
-        return BacktestResponse(symbol=request.symbol, test_period=f"{start_date.date()} to {end_date.date()}", agent_return=results['total_return_pct'], buy_hold_return=buy_hold_return, outperformance=results['total_return_pct'] - buy_hold_return, total_trades=results['fills_received'], final_value=results['final_equity'], sharpe_ratio=results['sharpe_ratio'], sortino_ratio=results['sortino_ratio'], max_drawdown=results['max_drawdown_pct'], value_at_risk_95=results.get('value_at_risk_95'), value_at_risk_99=results.get('value_at_risk_99'), conditional_var_95=results.get('conditional_var_95'), conditional_var_99=results.get('conditional_var_99'), trades=[], portfolio_history=equity_curve, portfolio_dates=timestamps_iso)
+        return BacktestResponse(symbol=request.symbol, test_period=f"{start_date.date()} to {end_date.date()}", agent_return=results['total_return_pct'], buy_hold_return=buy_hold_return, outperformance=results['total_return_pct'] - buy_hold_return, total_trades=results['fills_received'], final_value=results['final_equity'], sharpe_ratio=results['sharpe_ratio'], sortino_ratio=results['sortino_ratio'], max_drawdown=results['max_drawdown_pct'], value_at_risk_95=results.get('value_at_risk_95'), value_at_risk_99=results.get('value_at_risk_99'), conditional_var_95=results.get('conditional_var_95'), conditional_var_99=results.get('conditional_var_99'), trades=results.get('trades', []), portfolio_history=equity_curve, portfolio_dates=timestamps_iso, shadow=shadow_data, comparison=comparison_data)
     except Exception as e:
         traceback.print_exc(); raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/symbols")
 async def get_popular_symbols():
-    return {"yfinance_symbols": ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "NVDA", "META", "NFLX", "AMD", "CRM", "SPY", "QQQ", "DIA", "IWM"]}
+    return {
+        "yfinance_symbols": [
+            # US Stocks
+            "AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "NVDA", "META", "NFLX", "AMD", "CRM",
+            # US ETFs
+            "SPY", "QQQ", "DIA", "IWM",
+            # Indian NSE (National Stock Exchange) - .NS suffix
+            "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS", "SBIN.NS",
+            "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS", "LT.NS",
+            # Indian BSE (Bombay Stock Exchange) - .BO suffix
+            "RELIANCE.BO", "TCS.BO", "HDFCBANK.BO", "INFY.BO",
+            # Indian Indices
+            "^NSEI", "^BSESN"
+        ],
+        "categories": {
+            "US Stocks": ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "NVDA", "META", "NFLX", "AMD", "CRM"],
+            "US ETFs": ["SPY", "QQQ", "DIA", "IWM"],
+            "India NSE": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS", "SBIN.NS", "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS", "LT.NS"],
+            "India BSE": ["RELIANCE.BO", "TCS.BO", "HDFCBANK.BO", "INFY.BO"],
+            "Indices": ["^NSEI", "^BSESN"]
+        }
+    }
+
+@router.get("/validate-symbol/{symbol}")
+async def validate_symbol(symbol: str):
+    """Validate if a stock symbol exists and can be used for backtesting"""
+    try:
+        import yfinance as yf
+        ticker = yf.Ticker(symbol.upper())
+        
+        # Try to get recent data
+        hist = ticker.history(period="5d")
+        
+        if hist.empty:
+            return {
+                "valid": False,
+                "symbol": symbol.upper(),
+                "message": "No data available for this symbol"
+            }
+        
+        # Get ticker info
+        info = ticker.info
+        current_price = hist['Close'].iloc[-1] if not hist.empty else None
+        
+        return {
+            "valid": True,
+            "symbol": symbol.upper(),
+            "name": info.get('longName') or info.get('shortName') or symbol.upper(),
+            "current_price": float(current_price) if current_price else None,
+            "currency": info.get('currency', 'USD'),
+            "exchange": info.get('exchange', 'Unknown')
+        }
+    except Exception as e:
+        return {
+            "valid": False,
+            "symbol": symbol.upper(),
+            "message": f"Could not validate symbol: {str(e)}"
+        }
 
 @router.get("/strategies")
 async def get_available_strategies():
@@ -134,7 +239,9 @@ async def compare_strategies(symbol: str = "AAPL", start_date: Optional[str] = N
         for strategy_id, strategy, params in strategies_to_compare:
             backtester = Backtester([symbol], start, end, 100000.0, strategy)
             result = backtester.run()
-            results.append({
+            
+            # Build result with shadow data if available
+            result_data = {
                 "strategy": strategy_id,
                 "name": strategy.name,
                 "total_return": result['total_return_pct'],
@@ -143,7 +250,30 @@ async def compare_strategies(symbol: str = "AAPL", start_date: Optional[str] = N
                 "max_drawdown": result['max_drawdown_pct'],
                 "total_trades": result['fills_received'],
                 "final_value": result['final_equity']
-            })
+            }
+            
+            # Add shadow data if available
+            if 'shadow' in result and result['shadow']:
+                shadow = result['shadow']
+                result_data['shadow'] = {
+                    "final_equity": shadow['final_equity'],
+                    "total_return_pct": shadow['total_return_pct'],
+                    "sharpe_ratio": shadow['sharpe_ratio'],
+                    "sortino_ratio": shadow['sortino_ratio'],
+                    "num_trades": shadow['num_trades'],
+                    "total_commission": shadow['total_commission']
+                }
+            
+            # Add comparison data if available
+            if 'comparison' in result and result['comparison']:
+                comp = result['comparison']
+                result_data['comparison'] = {
+                    "equity_difference": comp['equity_difference'],
+                    "return_difference_pct": comp['return_difference_pct'],
+                    "main_outperformed": comp['main_outperformed']
+                }
+            
+            results.append(result_data)
         
         return {"symbol": symbol, "period": f"{start.date()} to {end.date()}", "results": results}
     except Exception as e:

@@ -1080,6 +1080,11 @@
                 const data = await response.json();
                 const corr = data.correlation_matrix;
                 
+                // Validate correlation matrix structure
+                if (!corr || typeof corr !== 'object') {
+                    throw new Error('Invalid correlation matrix structure');
+                }
+                
                 // Build table
                 document.getElementById('corr-results').classList.remove('hidden');
                 const table = document.getElementById('corr-matrix-table');
@@ -1095,6 +1100,10 @@
                     const tr = document.createElement('tr');
                     tr.innerHTML = `<td class="p-2 border border-neutral-700 font-bold">${sym1}</td>` +
                         symbols.map(sym2 => {
+                            // Check if the symbol exists in correlation matrix
+                            if (!corr[sym1] || corr[sym1][sym2] === undefined) {
+                                return `<td class="p-2 border border-neutral-700 text-center">N/A</td>`;
+                            }
                             const val = corr[sym1][sym2];
                             const color = val > 0.7 ? 'text-green-500' : val < -0.3 ? 'text-red-500' : '';
                             return `<td class="p-2 border border-neutral-700 text-center ${color}">${val.toFixed(2)}</td>`;
@@ -1103,6 +1112,7 @@
                 });
                 table.appendChild(tbody);
             } catch (error) {
+                console.error('Correlation error:', error);
                 alert('Error: ' + error.message);
             }
         }

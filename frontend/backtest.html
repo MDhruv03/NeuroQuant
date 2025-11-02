@@ -50,7 +50,36 @@
                     <div id="parametersContainer"></div>
                     <div>
                         <label class="block text-sm text-neutral-400 mb-2">Symbol</label>
-                        <input type="text" id="symbol" value="AAPL" class="w-full bg-black border border-neutral-800 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-neutral-700" required>
+                        <div class="relative">
+                            <input type="text" id="symbol" value="AAPL" 
+                                   class="w-full bg-black border border-neutral-800 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-neutral-700 uppercase" 
+                                   placeholder="Enter ticker (e.g., AAPL, RELIANCE.NS)" 
+                                   list="symbolSuggestions"
+                                   required>
+                            <datalist id="symbolSuggestions">
+                                <!-- Will be populated dynamically -->
+                            </datalist>
+                            <button type="button" id="validateSymbolBtn" 
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-1 bg-neutral-800 hover:bg-neutral-700 rounded transition">
+                                Validate
+                            </button>
+                        </div>
+                        <div id="symbolValidation" class="mt-1 text-xs hidden"></div>
+                        <div class="mt-2">
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-xs text-neutral-500">Quick Select:</p>
+                                <select id="marketSelect" class="text-xs bg-neutral-900 border border-neutral-800 rounded px-2 py-1">
+                                    <option value="US Stocks">🇺🇸 US Stocks</option>
+                                    <option value="India NSE">🇮🇳 NSE</option>
+                                    <option value="India BSE">🇮🇳 BSE</option>
+                                    <option value="US ETFs">📊 ETFs</option>
+                                    <option value="Indices">📈 Indices</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-wrap gap-1" id="popularSymbols">
+                                <!-- Will be populated dynamically -->
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm text-neutral-400 mb-2">Start Date</label>
@@ -90,7 +119,7 @@
                     </div>
                     
                     <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
-                        <h3 class="text-sm font-mono text-neutral-500 mb-4">PERFORMANCE METRICS</h3>
+                        <h3 class="text-sm font-mono text-neutral-500 mb-4">MAIN PORTFOLIO METRICS</h3>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <p class="text-sm text-neutral-400">Total Return</p>
@@ -115,6 +144,43 @@
                             <div>
                                 <p class="text-sm text-neutral-400">Final Value</p>
                                 <p id="finalValue" class="text-2xl font-bold mt-1">--</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Shadow Portfolio Comparison -->
+                    <div id="shadowComparison" class="hidden bg-neutral-950 border border-neutral-900 rounded-xl p-6">
+                        <h3 class="text-sm font-mono text-neutral-500 mb-4">🌑 SHADOW PORTFOLIO (OPPOSITE TRADES)</h3>
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <p class="text-sm text-neutral-400">Total Return</p>
+                                <p id="shadowReturn" class="text-2xl font-bold mt-1">--</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-neutral-400">Final Value</p>
+                                <p id="shadowFinalValue" class="text-2xl font-bold mt-1">--</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-neutral-400">Sharpe Ratio</p>
+                                <p id="shadowSharpe" class="text-2xl font-bold mt-1">--</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-neutral-400">Sortino Ratio</p>
+                                <p id="shadowSortino" class="text-2xl font-bold mt-1">--</p>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t border-neutral-800 pt-4">
+                            <h4 class="text-sm font-mono text-neutral-500 mb-3">⚖️ COMPARISON</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-neutral-400">Return Difference</p>
+                                    <p id="returnDifference" class="text-xl font-bold mt-1">--</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-neutral-400">Equity Difference</p>
+                                    <p id="equityDifference" class="text-xl font-bold mt-1">--</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -197,6 +263,108 @@
     };
 
     document.getElementById('endDate').valueAsDate = new Date();
+
+    let symbolCategories = {};
+    
+    // Load popular symbols
+    async function loadPopularSymbols() {
+        try {
+            const response = await fetch(API_BASE + '/symbols');
+            const data = await response.json();
+            const symbols = data.yfinance_symbols || [];
+            symbolCategories = data.categories || {};
+            
+            // Populate datalist for autocomplete
+            const datalist = document.getElementById('symbolSuggestions');
+            datalist.innerHTML = symbols.map(s => `<option value="${s}">`).join('');
+            
+            // Populate popular symbols for default category (US Stocks)
+            updateSymbolButtons('US Stocks');
+        } catch (error) {
+            console.error('Failed to load symbols:', error);
+        }
+    }
+
+    function updateSymbolButtons(category) {
+        const container = document.getElementById('popularSymbols');
+        const symbols = symbolCategories[category] || [];
+        
+        container.innerHTML = symbols.map(symbol => {
+            // Format display name (remove exchange suffix for display)
+            const displayName = symbol.replace('.NS', '').replace('.BO', '');
+            const suffix = symbol.includes('.NS') ? ' NSE' : symbol.includes('.BO') ? ' BSE' : '';
+            
+            return `<button type="button" 
+                class="px-2 py-1 text-xs bg-neutral-900 hover:bg-neutral-800 rounded border border-neutral-800 transition" 
+                onclick="selectSymbol('${symbol}')"
+                title="${symbol}">
+                ${displayName}${suffix ? '<span class="text-neutral-500 ml-1">' + suffix + '</span>' : ''}
+            </button>`;
+        }).join('');
+    }
+
+    // Market selector change
+    document.getElementById('marketSelect').addEventListener('change', (e) => {
+        updateSymbolButtons(e.target.value);
+    });
+
+    function selectSymbol(symbol) {
+        document.getElementById('symbol').value = symbol;
+        validateSymbol();
+    }
+
+    // Validate symbol
+    async function validateSymbol() {
+        const symbolInput = document.getElementById('symbol');
+        const symbol = symbolInput.value.trim().toUpperCase();
+        const validationDiv = document.getElementById('symbolValidation');
+        
+        if (!symbol) {
+            validationDiv.classList.add('hidden');
+            return;
+        }
+
+        symbolInput.value = symbol;
+        validationDiv.classList.remove('hidden');
+        validationDiv.className = 'mt-1 text-xs text-neutral-400';
+        validationDiv.innerHTML = '⏳ Validating...';
+
+        try {
+            const response = await fetch(API_BASE + `/validate-symbol/${symbol}`);
+            const data = await response.json();
+            
+            if (data.valid) {
+                validationDiv.className = 'mt-1 text-xs text-green-500';
+                const priceStr = data.current_price ? ` ($${data.current_price.toFixed(2)})` : '';
+                validationDiv.innerHTML = `✓ Valid: ${data.name}${priceStr}`;
+            } else {
+                validationDiv.className = 'mt-1 text-xs text-red-500';
+                validationDiv.innerHTML = `✗ ${data.message || 'Invalid symbol'}`;
+            }
+        } catch (error) {
+            validationDiv.className = 'mt-1 text-xs text-yellow-500';
+            validationDiv.innerHTML = '⚠ Could not validate (will try during backtest)';
+        }
+    }
+
+    // Auto-uppercase ticker but preserve exchange suffixes
+    document.getElementById('symbol').addEventListener('input', (e) => {
+        let value = e.target.value;
+        // Split by dot to handle exchange suffixes like .NS, .BO, .L, etc.
+        if (value.includes('.')) {
+            const parts = value.split('.');
+            parts[0] = parts[0].toUpperCase();
+            e.target.value = parts.join('.');
+        } else {
+            e.target.value = value.toUpperCase();
+        }
+    });
+
+    document.getElementById('symbol').addEventListener('blur', validateSymbol);
+    document.getElementById('validateSymbolBtn').addEventListener('click', validateSymbol);
+
+    // Load symbols on page load
+    loadPopularSymbols();
 
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('strategy')) {
@@ -288,6 +456,7 @@
         document.getElementById('loadingState').classList.add('hidden');
         document.getElementById('resultsContainer').classList.remove('hidden');
 
+        // Main portfolio metrics
         document.getElementById('totalReturn').textContent = data.agent_return.toFixed(2) + '%';
         document.getElementById('sharpeRatio').textContent = (data.sharpe_ratio || 0).toFixed(2);
         document.getElementById('sortinoRatio').textContent = (data.sortino_ratio || 0).toFixed(2);
@@ -305,11 +474,42 @@
             ? 'text-2xl font-bold mt-1 text-green-500' 
             : 'text-2xl font-bold mt-1 text-red-500';
 
-        updateEquityChart(data.portfolio_history || [], data.portfolio_dates || []);
+        // Display shadow portfolio if available
+        if (data.shadow) {
+            document.getElementById('shadowComparison').classList.remove('hidden');
+            
+            document.getElementById('shadowReturn').textContent = data.shadow.total_return_pct.toFixed(2) + '%';
+            document.getElementById('shadowFinalValue').textContent = '$' + data.shadow.final_equity.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('shadowSharpe').textContent = (data.shadow.sharpe_ratio || 0).toFixed(2);
+            document.getElementById('shadowSortino').textContent = (data.shadow.sortino_ratio || 0).toFixed(2);
+            
+            const shadowReturnEl = document.getElementById('shadowReturn');
+            shadowReturnEl.className = data.shadow.total_return_pct >= 0
+                ? 'text-2xl font-bold mt-1 text-green-500'
+                : 'text-2xl font-bold mt-1 text-red-500';
+            
+            // Comparison metrics
+            document.getElementById('returnDifference').textContent = data.comparison.return_difference_pct.toFixed(2) + '%';
+            document.getElementById('equityDifference').textContent = '$' + data.comparison.equity_difference.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
+            const returnDiffEl = document.getElementById('returnDifference');
+            returnDiffEl.className = data.comparison.return_difference_pct >= 0
+                ? 'text-xl font-bold mt-1 text-green-500'
+                : 'text-xl font-bold mt-1 text-red-500';
+            
+            const equityDiffEl = document.getElementById('equityDifference');
+            equityDiffEl.className = data.comparison.equity_difference >= 0
+                ? 'text-xl font-bold mt-1 text-green-500'
+                : 'text-xl font-bold mt-1 text-red-500';
+        } else {
+            document.getElementById('shadowComparison').classList.add('hidden');
+        }
+
+        updateEquityChart(data.portfolio_history || [], data.portfolio_dates || [], data.shadow?.equity_curve || null);
         updateTradesTable(data.trades || [], symbol);
     }
 
-    function updateEquityChart(equityCurve, timestamps) {
+    function updateEquityChart(equityCurve, timestamps, shadowEquityCurve) {
         const ctx = document.getElementById('equityChart').getContext('2d');
         
         if (equityChart) equityChart.destroy();
@@ -319,34 +519,58 @@
             equityCurve = [100000];
         }
 
-        // Calculate min/max for better scaling
-        const minValue = Math.min(...equityCurve);
-        const maxValue = Math.max(...equityCurve);
+        // Calculate min/max for better scaling (considering both curves)
+        let allValues = [...equityCurve];
+        if (shadowEquityCurve && shadowEquityCurve.length > 0) {
+            allValues = [...allValues, ...shadowEquityCurve];
+        }
+        
+        const minValue = Math.min(...allValues);
+        const maxValue = Math.max(...allValues);
         const padding = (maxValue - minValue) * 0.1 || 1000; // 10% padding or $1000 minimum
+
+        // Prepare datasets
+        const datasets = [{
+            label: 'Main Portfolio',
+            data: equityCurve,
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+        }];
+        
+        // Add shadow portfolio if available
+        if (shadowEquityCurve && shadowEquityCurve.length > 0) {
+            datasets.push({
+                label: 'Shadow Portfolio (Opposite)',
+                data: shadowEquityCurve,
+                borderColor: 'rgb(239, 68, 68)',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            });
+        }
 
         equityChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: timestamps || equityCurve.map((_, i) => i),
-                datasets: [{
-                    label: 'Portfolio Value',
-                    data: equityCurve,
-                    borderColor: 'rgb(34, 197, 94)',
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
+                datasets: datasets
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
+                    legend: { 
+                        display: shadowEquityCurve && shadowEquityCurve.length > 0,
+                        labels: { color: 'rgb(163, 163, 163)' }
+                    },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return 'Value: $' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                return context.dataset.label + ': $' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
                             }
                         }
                     }

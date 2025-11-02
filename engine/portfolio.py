@@ -50,7 +50,7 @@ class Portfolio:
     - Portfolio metrics
     """
     
-    def __init__(self, initial_capital: float = 100000.0):
+    def __init__(self, initial_capital: float = 100000.0, enable_shadow: bool = True):
         self.initial_capital = initial_capital
         self.cash = initial_capital
         self.positions: Dict[str, Position] = {}
@@ -65,6 +65,14 @@ class Portfolio:
         self.total_slippage_cost = 0.0
         self.peak_equity = initial_capital
         self.max_drawdown = 0.0
+        
+        # Shadow Portfolio - executes opposite trades
+        self.enable_shadow = enable_shadow
+        self.shadow_cash = initial_capital
+        self.shadow_positions: Dict[str, Position] = {}
+        self.shadow_equity_curve = [initial_capital]
+        self.shadow_fill_history: List[FillEvent] = []
+        self.shadow_total_commission = 0.0
     
     def update_fill(self, fill: FillEvent, current_prices: Dict[str, float]):
         """
@@ -75,21 +83,71 @@ class Portfolio:
         - Adding to positions
         - Closing positions
         - Partial closes
+        - Shadow portfolio (opposite trades)
         """
+        # Process main portfolio
+        self._process_fill(fill, is_shadow=False)
+        
+        # Process shadow portfolio with inverse trade
+        if self.enable_shadow:
+            inverse_fill = self._create_inverse_fill(fill)
+            self._process_fill(inverse_fill, is_shadow=True)
+        
+        # Update equity curves
+        self._update_equity(current_prices)
+    
+    def _create_inverse_fill(self, fill: FillEvent) -> FillEvent:
+        """Create inverse fill for shadow portfolio"""
+        inverse_side = OrderSide.SELL if fill.side == OrderSide.BUY else OrderSide.BUY
+        
+        # Handle potentially None order_id and fill_id
+        order_id = f"{fill.order_id}_shadow" if fill.order_id else "shadow_order"
+        fill_id = f"{fill.fill_id}_shadow" if fill.fill_id else "shadow_fill"
+        
+        return FillEvent(
+            symbol=fill.symbol,
+            exchange=fill.exchange,
+            quantity=fill.quantity,
+            side=inverse_side,
+            fill_price=fill.fill_price,
+            commission=fill.commission,
+            slippage=fill.slippage,
+            order_id=order_id,
+            fill_id=fill_id,
+            timestamp=fill.timestamp
+        )
+    
+    def _process_fill(self, fill: FillEvent, is_shadow: bool = False):
+        """Process fill for main or shadow portfolio"""
+        # Select portfolio state
+        if is_shadow:
+            cash = self.shadow_cash
+            positions = self.shadow_positions
+            fill_history = self.shadow_fill_history
+            total_commission = self.shadow_total_commission
+        else:
+            cash = self.cash
+            positions = self.positions
+            fill_history = self.fill_history
+            total_commission = self.total_commission_paid
+        
         symbol = fill.symbol
         
         # Track fill
-        self.fill_history.append(fill)
-        self.total_commission_paid += fill.commission
-        self.total_slippage_cost += fill.slippage * fill.quantity
+        fill_history.append(fill)
+        total_commission += fill.commission
+        
+        if is_shadow:
+            self.shadow_total_commission = total_commission
+        else:
+            self.total_commission_paid = total_commission
+            self.total_slippage_cost += fill.slippage * fill.quantity
         
         # Get or create position
-        if symbol not in self.positions:
-            self.positions[symbol] = Position(symbol, 0, 0.0)
+        if symbol not in positions:
+            positions[symbol] = Position(symbol, 0, 0.0)
         
-        position = self.positions[symbol]
-        
-        # Update cash (always pay commission)
+        position = positions[symbol]
         transaction_cost = fill.commission
         
         if fill.side == OrderSide.BUY:
@@ -106,10 +164,8 @@ class Portfolio:
                 if fill.quantity > cover_qty:
                     # Going long after covering
                     remaining = fill.quantity - cover_qty
-                    new_qty = remaining
-                    new_avg = fill.fill_price
-                    position.quantity = new_qty
-                    position.avg_price = new_avg
+                    position.quantity = remaining
+                    position.avg_price = fill.fill_price
             else:
                 # Adding to long or opening long
                 total_qty = position.quantity + fill.quantity
@@ -118,7 +174,7 @@ class Portfolio:
                 position.quantity = total_qty
                 position.avg_price = new_avg
             
-            self.cash -= cost
+            cash -= cost
             
         else:  # SELL
             # Selling
@@ -144,14 +200,17 @@ class Portfolio:
                 position.quantity = total_qty
                 position.avg_price = new_avg
             
-            self.cash += proceeds
+            cash += proceeds
         
         # Remove position if flat
         if position.quantity == 0:
-            del self.positions[symbol]
+            del positions[symbol]
         
-        # Update equity curve
-        self._update_equity(current_prices)
+        # Update cash
+        if is_shadow:
+            self.shadow_cash = cash
+        else:
+            self.cash = cash
     
     def get_unrealized_pnl(self, symbol: str, current_price: float) -> float:
         """Calculate unrealized PnL for position"""
@@ -185,19 +244,47 @@ class Portfolio:
         )
         return self.cash + positions_value
     
+    def get_shadow_equity(self, current_prices: Dict[str, float]) -> float:
+        """Current shadow portfolio equity"""
+        if not self.enable_shadow:
+            return 0.0
+        
+        positions_value = sum(
+            self._get_shadow_unrealized_pnl(symbol, current_prices[symbol])
+            for symbol in self.shadow_positions.keys()
+            if symbol in current_prices
+        )
+        return self.shadow_cash + positions_value
+    
+    def _get_shadow_unrealized_pnl(self, symbol: str, current_price: float) -> float:
+        """Calculate unrealized PnL for shadow position"""
+        if symbol not in self.shadow_positions:
+            return 0.0
+        
+        position = self.shadow_positions[symbol]
+        if position.quantity > 0:
+            return position.quantity * (current_price - position.avg_price)
+        else:
+            return abs(position.quantity) * (position.avg_price - current_price)
+    
     def _update_equity(self, current_prices: Dict[str, float]):
-        """Update equity curve and drawdown"""
+        """Update equity curve and drawdown for both main and shadow portfolios"""
+        # Update main portfolio
         equity = self.get_equity(current_prices)
         self.equity_curve.append(equity)
         self.timestamps.append(datetime.now())
         
-        # Update peak and drawdown
         if equity > self.peak_equity:
             self.peak_equity = equity
         
         drawdown = (self.peak_equity - equity) / self.peak_equity
         if drawdown > self.max_drawdown:
             self.max_drawdown = drawdown
+        
+        # Update shadow portfolio if enabled
+        if self.enable_shadow:
+            shadow_equity = self.get_shadow_equity(current_prices)
+            self.shadow_equity_curve.append(shadow_equity)
     
     def get_position_exposure(self, current_prices: Dict[str, float]) -> Dict[str, float]:
         """Get exposure per position as % of equity"""
@@ -211,18 +298,20 @@ class Portfolio:
         
         return exposures
     
-    def calculate_returns(self) -> np.ndarray:
-        """Calculate period returns"""
-        if len(self.equity_curve) < 2:
+    def calculate_returns(self, is_shadow: bool = False) -> np.ndarray:
+        """Calculate period returns for main or shadow portfolio"""
+        equity_curve = self.shadow_equity_curve if is_shadow else self.equity_curve
+        
+        if len(equity_curve) < 2:
             return np.array([])
         
-        equity_array = np.array(self.equity_curve)
+        equity_array = np.array(equity_curve)
         returns = np.diff(equity_array) / equity_array[:-1]
         return returns
     
-    def calculate_sharpe_ratio(self, risk_free_rate: float = 0.02) -> float:
-        """Sharpe ratio (annualized)"""
-        returns = self.calculate_returns()
+    def calculate_sharpe_ratio(self, risk_free_rate: float = 0.02, is_shadow: bool = False) -> float:
+        """Sharpe ratio (annualized) for main or shadow portfolio"""
+        returns = self.calculate_returns(is_shadow=is_shadow)
         if len(returns) < 2:
             return 0.0
         
@@ -233,9 +322,9 @@ class Portfolio:
         sharpe = np.mean(excess_returns) / np.std(returns) * np.sqrt(252)
         return sharpe
     
-    def calculate_sortino_ratio(self, risk_free_rate: float = 0.02) -> float:
-        """Sortino ratio (downside deviation)"""
-        returns = self.calculate_returns()
+    def calculate_sortino_ratio(self, risk_free_rate: float = 0.02, is_shadow: bool = False) -> float:
+        """Sortino ratio (downside deviation) for main or shadow portfolio"""
+        returns = self.calculate_returns(is_shadow=is_shadow)
         if len(returns) < 2:
             return 0.0
         

@@ -64,7 +64,9 @@
         <div id="resultsContainer" class="hidden space-y-6">
             <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
                 <h3 class="text-sm font-mono text-neutral-500 mb-4">PERFORMANCE COMPARISON</h3>
-                <canvas id="comparisonChart" height="100"></canvas>
+                <div style="height: 400px; position: relative;">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -139,11 +141,48 @@
 
         const results = data.results;
         
+        // Sanitize data - replace any invalid values
+        results.forEach(r => {
+            if (!isFinite(r.total_return) || r.total_return === null || r.total_return === undefined) {
+                console.warn(`Invalid return for ${r.name}:`, r.total_return);
+                r.total_return = 0;
+            }
+            // Clamp extremely large values
+            if (Math.abs(r.total_return) > 10000) {
+                console.warn(`Clamping extreme return for ${r.name}: ${r.total_return}% -> 1000%`);
+                r.total_return = r.total_return > 0 ? 1000 : -1000;
+            }
+        });
+        
         // Performance comparison chart
         const ctx = document.getElementById('comparisonChart').getContext('2d');
         if (comparisonChart) comparisonChart.destroy();
 
         const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'];
+        
+        // Get valid returns
+        const returns = results.map(r => r.total_return);
+        
+        console.log('Return values:', returns);
+        
+        const minReturn = Math.min(...returns);
+        const maxReturn = Math.max(...returns);
+        const range = Math.abs(maxReturn - minReturn);
+        
+        console.log('Range:', { minReturn, maxReturn, range });
+        
+        // Calculate sensible padding
+        let padding = Math.max(range * 0.15, 5);
+        
+        // If all values are the same or very close, use fixed padding
+        if (range < 1) {
+            padding = 10;
+        }
+        
+        const yMin = minReturn - padding;
+        const yMax = maxReturn + padding;
+        
+        console.log('Chart Y-axis:', { yMin, yMax, padding });
         
         comparisonChart = new Chart(ctx, {
             type: 'bar',
@@ -151,7 +190,7 @@
                 labels: results.map(r => r.name),
                 datasets: [{
                     label: 'Total Return (%)',
-                    data: results.map(r => r.total_return),
+                    data: returns,
                     backgroundColor: results.map((r, i) => colors[i % colors.length]),
                     borderWidth: 0
                 }]
@@ -160,7 +199,14 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + '%';
+                            }
+                        }
+                    }
                 },
                 scales: {
                     x: {
@@ -168,9 +214,18 @@
                         grid: { color: 'rgba(64, 64, 64, 0.3)' }
                     },
                     y: {
+                        type: 'linear',
+                        grace: '5%',
+                        beginAtZero: false,
+                        suggestedMin: yMin,
+                        suggestedMax: yMax,
                         ticks: { 
                             color: 'rgb(163, 163, 163)',
-                            callback: value => value + '%'
+                            stepSize: Math.max(Math.ceil(range / 5), 1),
+                            callback: value => {
+                                if (!isFinite(value)) return '';
+                                return value.toFixed(1) + '%';
+                            }
                         },
                         grid: { color: 'rgba(64, 64, 64, 0.3)' }
                     }

@@ -5,10 +5,11 @@ from typing import List, Dict
 from database.database import DATABASE_URL, get_db
 
 class StrategyManager:
-    """Placeholder for strategy management functionality"""
+    """Strategy management for trading strategies"""
     
     def __init__(self):
-        raise NotImplementedError("StrategyManager not yet implemented")
+        """Initialize the strategy manager"""
+        pass
 
     def create_strategy(self, conn: sqlite3.Connection, name: str, strategy_type: str, parameters: Dict) -> Dict:
         """Create a new trading strategy"""

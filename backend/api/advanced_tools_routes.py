@@ -154,6 +154,11 @@ async def optimize_portfolio(request: PortfolioOptimizationRequest):
         # Drop any rows with NaN values
         returns_df = returns_df.dropna()
         
+        # Remove duplicate indices (timestamps) by keeping first occurrence
+        if returns_df.index.duplicated().any():
+            logger.warning(f"Removing {returns_df.index.duplicated().sum()} duplicate timestamps")
+            returns_df = returns_df[~returns_df.index.duplicated(keep='first')]
+        
         if returns_df.empty or len(returns_df) < 10:
             raise HTTPException(status_code=400, detail="Insufficient data for optimization after cleaning")
         
@@ -179,7 +184,21 @@ async def optimize_portfolio(request: PortfolioOptimizationRequest):
         
         # Add statistics
         result['statistics'] = optimizer.get_statistics_summary()
-        result['correlation_matrix'] = optimizer.get_correlation_matrix().to_dict()
+        
+        # Convert correlation matrix to nested dict format
+        corr_matrix = optimizer.get_correlation_matrix()
+        # Ensure index and columns are unique
+        if corr_matrix.index.duplicated().any():
+            corr_matrix = corr_matrix[~corr_matrix.index.duplicated(keep='first')]
+        if corr_matrix.columns.duplicated().any():
+            corr_matrix = corr_matrix.loc[:, ~corr_matrix.columns.duplicated(keep='first')]
+        
+        # Convert using index and column names (which are symbol names)
+        symbols = corr_matrix.index.tolist()
+        result['correlation_matrix'] = {
+            symbol: {col: float(corr_matrix.loc[symbol, col]) for col in symbols}
+            for symbol in symbols
+        }
         
         return result
         
@@ -212,6 +231,11 @@ async def calculate_efficient_frontier(request: PortfolioOptimizationRequest):
         # Concatenate all returns into a DataFrame
         returns_df = pd.concat(returns_list, axis=1)
         returns_df = returns_df.dropna()
+        
+        # Remove duplicate indices (timestamps) by keeping first occurrence
+        if returns_df.index.duplicated().any():
+            logger.warning(f"Removing {returns_df.index.duplicated().sum()} duplicate timestamps from efficient frontier data")
+            returns_df = returns_df[~returns_df.index.duplicated(keep='first')]
         
         if returns_df.empty or len(returns_df) < 10:
             raise HTTPException(status_code=400, detail="Insufficient data for optimization after cleaning")
