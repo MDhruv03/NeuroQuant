@@ -24,7 +24,8 @@ class DatabaseConfig:
 class APIConfig:
     """API server configuration"""
     HOST: str = os.getenv("API_HOST", "127.0.0.1")
-    PORT: int = int(os.getenv("API_PORT", "8000"))
+    # Render provides PORT env var, fallback to API_PORT or default 8000
+    PORT: int = int(os.getenv("PORT", os.getenv("API_PORT", "8000")))
     RELOAD: bool = os.getenv("API_RELOAD", "false").lower() == "true"
     WORKERS: int = int(os.getenv("API_WORKERS", "1"))
     TITLE: str = "NeuroQuant Trading API"
@@ -58,9 +59,6 @@ class ModelConfig:
     AUTO_SAVE: bool = os.getenv("MODEL_AUTO_SAVE", "true").lower() == "true"
     SAVE_INTERVAL: int = int(os.getenv("MODEL_SAVE_INTERVAL", "1000"))
     
-    # Create directories if they don't exist
-    SAVE_DIR.mkdir(parents=True, exist_ok=True)
-    CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class TrainingConfig:

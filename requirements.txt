@@ -19,6 +19,7 @@ websockets>=11.0.3
 aiohttp>=3.8.5
 
 # Database and caching (optional for future enhancements)
+psycopg2-binary>=2.9.9  # PostgreSQL adapter for production
 redis>=4.6.0
 aioredis>=2.0.1
 
