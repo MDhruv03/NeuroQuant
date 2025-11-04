@@ -58,6 +58,7 @@ class BacktestRunResponse(BaseModel):
     total_trades: int; final_value: float; trades: List[Dict]; portfolio_history: List[float]; portfolio_dates: List[str]
 
 @router.get("/health")
+@router.head("/health")  # Support HEAD requests for health checks
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 

@@ -124,6 +124,7 @@ if frontend_dir.exists():
     
     # Serve HTML pages - these take precedence over API routes
     @app.get("/")
+    @app.head("/")  # Add HEAD method support for Render health checks
     async def serve_frontend():
         """Serve the landing page"""
         return FileResponse(frontend_dir / "index.html")
