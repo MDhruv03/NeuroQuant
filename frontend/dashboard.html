@@ -105,7 +105,10 @@
     </footer>
 
     <script>
-    const API_BASE = 'http://localhost:8000/api';
+    // Auto-detect API base URL (works for both local and deployed)
+    const API_BASE = window.location.hostname === 'localhost' 
+        ? 'http://localhost:8000/api' 
+        : `${window.location.origin}/api`;
     let performanceChart = null;
 
     async function loadDashboardData() {
