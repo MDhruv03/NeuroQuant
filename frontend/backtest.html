@@ -6,34 +6,65 @@
     <title>Backtest - NeuroQuant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Mobile menu animations */
+        .mobile-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .mobile-menu.active {
+            max-height: 500px;
+        }
+    </style>
 </head>
 <body class="bg-black text-white min-h-screen">
     
     <header class="border-b border-neutral-900 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center space-x-8">
-                <h1 class="text-xl font-semibold">NeuroQuant</h1>
-                <nav class="flex items-center space-x-6 text-sm">
-                    <a href="/" class="text-neutral-400 hover:text-white transition">Home</a>
-                    <a href="/dashboard" class="text-neutral-400 hover:text-white transition">Dashboard</a>
-                    <a href="/strategies" class="text-neutral-400 hover:text-white transition">Strategies</a>
-                    <a href="/backtest" class="text-white font-medium">Backtest</a>
-                    <a href="/compare" class="text-neutral-400 hover:text-white transition">Compare</a>
-                    <a href="/lab" class="text-neutral-400 hover:text-white transition">Lab</a>
-                </nav>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4 sm:space-x-8">
+                    <h1 class="text-lg sm:text-xl font-semibold">NeuroQuant</h1>
+                    <!-- Desktop Navigation -->
+                    <nav class="hidden md:flex items-center space-x-6 text-sm">
+                        <a href="/" class="text-neutral-400 hover:text-white transition">Home</a>
+                        <a href="/dashboard" class="text-neutral-400 hover:text-white transition">Dashboard</a>
+                        <a href="/strategies" class="text-neutral-400 hover:text-white transition">Strategies</a>
+                        <a href="/backtest" class="text-white font-medium">Backtest</a>
+                        <a href="/compare" class="text-neutral-400 hover:text-white transition">Compare</a>
+                        <a href="/lab" class="text-neutral-400 hover:text-white transition">Lab</a>
+                    </nav>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-2 px-3 py-1.5 bg-neutral-900 rounded-lg">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs font-mono text-neutral-400">LIVE</span>
+                    </div>
+                    <!-- Mobile menu button -->
+                    <button id="mobileMenuBtn" class="md:hidden p-2 rounded-lg hover:bg-neutral-900 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
-            <div class="flex items-center space-x-2 px-3 py-1.5 bg-neutral-900 rounded-lg">
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-xs font-mono text-neutral-400">LIVE</span>
-            </div>
+            <!-- Mobile Navigation -->
+            <nav id="mobileMenu" class="mobile-menu md:hidden mt-4 space-y-2">
+                <a href="/" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Home</a>
+                <a href="/dashboard" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Dashboard</a>
+                <a href="/strategies" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Strategies</a>
+                <a href="/backtest" class="block px-4 py-2 text-white font-medium bg-neutral-900 rounded-lg">Backtest</a>
+                <a href="/compare" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Compare</a>
+                <a href="/lab" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Lab</a>
+            </nav>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-6 py-8">
-        <h2 class="text-3xl font-bold mb-2">Backtest Strategy</h2>
-        <p class="text-neutral-500 mb-8">Test quantitative strategies on historical data</p>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <h2 class="text-2xl sm:text-3xl font-bold mb-2">Backtest Strategy</h2>
+        <p class="text-neutral-500 mb-6 sm:mb-8 text-sm sm:text-base">Test quantitative strategies on historical data</p>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             
             <div class="lg:col-span-1 bg-neutral-950 border border-neutral-900 rounded-xl p-6">
                 <h3 class="text-sm font-mono text-neutral-500 mb-4">CONFIGURATION</h3>
@@ -118,113 +149,113 @@
                         </button>
                     </div>
                     
-                    <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
-                        <h3 class="text-sm font-mono text-neutral-500 mb-4">MAIN PORTFOLIO METRICS</h3>
-                        <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-4 sm:p-6">
+                        <h3 class="text-xs sm:text-sm font-mono text-neutral-500 mb-4">MAIN PORTFOLIO METRICS</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                             <div>
-                                <p class="text-sm text-neutral-400">Total Return</p>
-                                <p id="totalReturn" class="text-2xl font-bold mt-1">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">Total Return</p>
+                                <p id="totalReturn" class="text-lg sm:text-2xl font-bold mt-1">--</p>
                             </div>
                             <div>
-                                <p class="text-sm text-neutral-400">Sharpe Ratio</p>
-                                <p id="sharpeRatio" class="text-2xl font-bold mt-1">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">Sharpe Ratio</p>
+                                <p id="sharpeRatio" class="text-lg sm:text-2xl font-bold mt-1">--</p>
                             </div>
                             <div>
-                                <p class="text-sm text-neutral-400">Max Drawdown</p>
-                                <p id="maxDrawdown" class="text-2xl font-bold mt-1 text-red-500">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">Max Drawdown</p>
+                                <p id="maxDrawdown" class="text-lg sm:text-2xl font-bold mt-1 text-red-500">--</p>
                             </div>
                             <div>
-                                <p class="text-sm text-neutral-400">Total Trades</p>
-                                <p id="totalTrades" class="text-2xl font-bold mt-1">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">Total Trades</p>
+                                <p id="totalTrades" class="text-lg sm:text-2xl font-bold mt-1">--</p>
                             </div>
                             <div>
-                                <p class="text-sm text-neutral-400">Sortino Ratio</p>
-                                <p id="sortinoRatio" class="text-2xl font-bold mt-1">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">Sortino Ratio</p>
+                                <p id="sortinoRatio" class="text-lg sm:text-2xl font-bold mt-1">--</p>
                             </div>
                             <div>
-                                <p class="text-sm text-neutral-400">Final Value</p>
-                                <p id="finalValue" class="text-2xl font-bold mt-1">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">Final Value</p>
+                                <p id="finalValue" class="text-lg sm:text-2xl font-bold mt-1">--</p>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Shadow Portfolio Comparison -->
-                    <div id="shadowComparison" class="hidden bg-neutral-950 border border-neutral-900 rounded-xl p-6">
-                        <h3 class="text-sm font-mono text-neutral-500 mb-4">🌑 SHADOW PORTFOLIO (OPPOSITE TRADES)</h3>
-                        <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div id="shadowComparison" class="hidden bg-neutral-950 border border-neutral-900 rounded-xl p-4 sm:p-6">
+                        <h3 class="text-xs sm:text-sm font-mono text-neutral-500 mb-4">🌑 SHADOW PORTFOLIO (OPPOSITE TRADES)</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
                             <div>
-                                <p class="text-sm text-neutral-400">Total Return</p>
-                                <p id="shadowReturn" class="text-2xl font-bold mt-1">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">Total Return</p>
+                                <p id="shadowReturn" class="text-lg sm:text-2xl font-bold mt-1">--</p>
                             </div>
                             <div>
-                                <p class="text-sm text-neutral-400">Final Value</p>
-                                <p id="shadowFinalValue" class="text-2xl font-bold mt-1">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">Final Value</p>
+                                <p id="shadowFinalValue" class="text-lg sm:text-2xl font-bold mt-1">--</p>
                             </div>
                             <div>
-                                <p class="text-sm text-neutral-400">Sharpe Ratio</p>
-                                <p id="shadowSharpe" class="text-2xl font-bold mt-1">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">Sharpe Ratio</p>
+                                <p id="shadowSharpe" class="text-lg sm:text-2xl font-bold mt-1">--</p>
                             </div>
                             <div>
-                                <p class="text-sm text-neutral-400">Sortino Ratio</p>
-                                <p id="shadowSortino" class="text-2xl font-bold mt-1">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">Sortino Ratio</p>
+                                <p id="shadowSortino" class="text-lg sm:text-2xl font-bold mt-1">--</p>
                             </div>
                         </div>
                         
                         <div class="border-t border-neutral-800 pt-4">
-                            <h4 class="text-sm font-mono text-neutral-500 mb-3">⚖️ COMPARISON</h4>
-                            <div class="grid grid-cols-2 gap-4">
+                            <h4 class="text-xs sm:text-sm font-mono text-neutral-500 mb-3">⚖️ COMPARISON</h4>
+                            <div class="grid grid-cols-2 gap-3 sm:gap-4">
                                 <div>
-                                    <p class="text-sm text-neutral-400">Return Difference</p>
-                                    <p id="returnDifference" class="text-xl font-bold mt-1">--</p>
+                                    <p class="text-xs sm:text-sm text-neutral-400">Return Difference</p>
+                                    <p id="returnDifference" class="text-base sm:text-xl font-bold mt-1">--</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-neutral-400">Equity Difference</p>
-                                    <p id="equityDifference" class="text-xl font-bold mt-1">--</p>
+                                    <p class="text-xs sm:text-sm text-neutral-400">Equity Difference</p>
+                                    <p id="equityDifference" class="text-base sm:text-xl font-bold mt-1">--</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
-                        <h3 class="text-sm font-mono text-neutral-500 mb-4">RISK METRICS</h3>
-                        <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-4 sm:p-6">
+                        <h3 class="text-xs sm:text-sm font-mono text-neutral-500 mb-4">RISK METRICS</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4">
                             <div>
-                                <p class="text-sm text-neutral-400">Value at Risk (95%)</p>
-                                <p id="var95" class="text-2xl font-bold mt-1 text-red-500">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">Value at Risk (95%)</p>
+                                <p id="var95" class="text-lg sm:text-2xl font-bold mt-1 text-red-500">--</p>
                             </div>
                             <div>
-                                <p class="text-sm text-neutral-400">Value at Risk (99%)</p>
-                                <p id="var99" class="text-2xl font-bold mt-1 text-red-500">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">Value at Risk (99%)</p>
+                                <p id="var99" class="text-lg sm:text-2xl font-bold mt-1 text-red-500">--</p>
                             </div>
                             <div>
-                                <p class="text-sm text-neutral-400">CVaR (95%)</p>
-                                <p id="cvar95" class="text-2xl font-bold mt-1 text-red-500">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">CVaR (95%)</p>
+                                <p id="cvar95" class="text-lg sm:text-2xl font-bold mt-1 text-red-500">--</p>
                             </div>
                             <div>
-                                <p class="text-sm text-neutral-400">CVaR (99%)</p>
-                                <p id="cvar99" class="text-2xl font-bold mt-1 text-red-500">--</p>
+                                <p class="text-xs sm:text-sm text-neutral-400">CVaR (99%)</p>
+                                <p id="cvar99" class="text-lg sm:text-2xl font-bold mt-1 text-red-500">--</p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
-                        <h3 class="text-sm font-mono text-neutral-500 mb-4">EQUITY CURVE</h3>
-                        <div style="height: 300px; position: relative;">
+                    <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-4 sm:p-6">
+                        <h3 class="text-xs sm:text-sm font-mono text-neutral-500 mb-4">EQUITY CURVE</h3>
+                        <div class="h-64 sm:h-80 lg:h-96 relative">
                             <canvas id="equityChart"></canvas>
                         </div>
                     </div>
 
-                    <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-6">
-                        <h3 class="text-sm font-mono text-neutral-500 mb-4">TRADES</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm" id="tradesTable">
+                    <div class="bg-neutral-950 border border-neutral-900 rounded-xl p-4 sm:p-6">
+                        <h3 class="text-xs sm:text-sm font-mono text-neutral-500 mb-4">TRADES</h3>
+                        <div class="overflow-x-auto -mx-4 sm:mx-0">
+                            <table class="w-full text-xs sm:text-sm min-w-[500px]" id="tradesTable">
                                 <thead>
                                     <tr class="border-b border-neutral-800">
-                                        <th class="text-left py-2 text-neutral-400">Date</th>
-                                        <th class="text-left py-2 text-neutral-400">Type</th>
-                                        <th class="text-right py-2 text-neutral-400">Symbol</th>
-                                        <th class="text-right py-2 text-neutral-400">Quantity</th>
-                                        <th class="text-right py-2 text-neutral-400">Price</th>
+                                        <th class="text-left py-2 px-2 sm:px-0 text-neutral-400">Date</th>
+                                        <th class="text-left py-2 px-2 sm:px-0 text-neutral-400">Type</th>
+                                        <th class="text-right py-2 px-2 sm:px-0 text-neutral-400">Symbol</th>
+                                        <th class="text-right py-2 px-2 sm:px-0 text-neutral-400">Quantity</th>
+                                        <th class="text-right py-2 px-2 sm:px-0 text-neutral-400">Price</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tradesBody"></tbody>
@@ -243,6 +274,11 @@
     </footer>
 
     <script>
+    // Mobile menu toggle
+    document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+        document.getElementById('mobileMenu').classList.toggle('active');
+    });
+
     // Auto-detect API base URL (works for both local and deployed)
     const API_BASE = window.location.hostname === 'localhost' 
         ? 'http://localhost:8000/api' 
