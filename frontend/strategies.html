@@ -12,16 +12,26 @@
         }
         #createModal.hidden { display: none; }
         #createModal:not(.hidden) { display: flex; }
+        .mobile-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .mobile-menu.active {
+            max-height: 500px;
+        }
     </style>
 </head>
 <body class="bg-black text-white min-h-screen">
     
     <!-- Header -->
     <header class="border-b border-neutral-900 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center space-x-8">
-                <h1 class="text-xl font-semibold">NeuroQuant</h1>
-                <nav class="flex items-center space-x-6 text-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-lg sm:text-xl font-semibold">NeuroQuant</h1>
+                
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex items-center space-x-6 text-sm">
                     <a href="/" class="text-neutral-400 hover:text-white transition">Home</a>
                     <a href="/dashboard" class="text-neutral-400 hover:text-white transition">Dashboard</a>
                     <a href="/strategies" class="text-white font-medium">Strategies</a>
@@ -29,29 +39,49 @@
                     <a href="/compare" class="text-neutral-400 hover:text-white transition">Compare</a>
                     <a href="/lab" class="text-neutral-400 hover:text-white transition">Lab</a>
                 </nav>
+
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-2 px-3 py-1.5 bg-neutral-900 rounded-lg">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs font-mono text-neutral-400">LIVE</span>
+                    </div>
+
+                    <!-- Mobile menu button -->
+                    <button id="mobileMenuBtn" class="md:hidden p-2 rounded-lg hover:bg-neutral-900 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
-            <div class="flex items-center space-x-2 px-3 py-1.5 bg-neutral-900 rounded-lg">
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-xs font-mono text-neutral-400">LIVE</span>
-            </div>
+
+            <!-- Mobile Navigation -->
+            <nav id="mobileMenu" class="mobile-menu md:hidden mt-4 space-y-2">
+                <a href="/" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Home</a>
+                <a href="/dashboard" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Dashboard</a>
+                <a href="/strategies" class="block px-4 py-2 text-white font-medium bg-neutral-900 rounded-lg">Strategies</a>
+                <a href="/backtest" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Backtest</a>
+                <a href="/compare" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Compare</a>
+                <a href="/lab" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Lab</a>
+            </nav>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-6 py-8">
-        <div class="mb-8 flex items-center justify-between">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-                <h2 class="text-3xl font-semibold mb-2">Trading Strategies</h2>
-                <p class="text-neutral-500">Create and configure quantitative strategies</p>
+                <h2 class="text-2xl sm:text-3xl font-semibold mb-2">Trading Strategies</h2>
+                <p class="text-sm sm:text-base text-neutral-500">Create and configure quantitative strategies</p>
             </div>
-            <button onclick="showCreateStrategyModal()" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition">
+            <button onclick="showCreateStrategyModal()" class="w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition text-sm sm:text-base">
                 + New Strategy
             </button>
         </div>
         
         <!-- Strategy Library -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="strategiesGrid">
-            <div class="col-span-full text-center text-neutral-500 py-12">Loading strategies...</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" id="strategiesGrid">
+            <div class="col-span-full text-center text-sm sm:text-base text-neutral-500 py-12">Loading strategies...</div>
         </div>
     </main>
 
@@ -102,7 +132,15 @@
     </div>
 
     <script>
-        const API_BASE = '/api';
+        // Mobile menu toggle
+        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+            document.getElementById('mobileMenu').classList.toggle('active');
+        });
+
+        // Auto-detect API base URL (works for both local and deployed)
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8000/api' 
+            : `${window.location.origin}/api`;
         let availableStrategies = [];
         
         async function loadStrategies() {
