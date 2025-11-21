@@ -35,7 +35,12 @@ class StrategyManager:
 
     def get_strategies(self, conn) -> List[Dict]:
         """Get all trading strategies"""
-        cursor = conn.cursor()
+        from database.database import USE_POSTGRES
+        if USE_POSTGRES:
+            from psycopg2.extras import RealDictCursor
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+        else:
+            cursor = conn.cursor()
         cursor.execute("SELECT id, name, type, parameters FROM agents")
         strategies_data = cursor.fetchall()
         
@@ -49,10 +54,12 @@ class StrategyManager:
     def get_strategy_by_id(self, conn, strategy_id: int) -> Dict:
         """Get a specific strategy by ID"""
         from database.database import USE_POSTGRES
-        cursor = conn.cursor()
         if USE_POSTGRES:
+            from psycopg2.extras import RealDictCursor
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
             cursor.execute("SELECT id, name, type, parameters FROM agents WHERE id = %s", (strategy_id,))
         else:
+            cursor = conn.cursor()
             cursor.execute("SELECT id, name, type, parameters FROM agents WHERE id = ?", (strategy_id,))
         strategy_data = cursor.fetchone()
         if strategy_data:

@@ -31,8 +31,10 @@ else:
 def get_connection():
     """Get database connection based on DATABASE_TYPE"""
     if USE_POSTGRES:
-        # PostgreSQL connection
-        return psycopg2.connect(DATABASE_URL)
+        # PostgreSQL connection with RealDictCursor for dict-like results
+        conn = psycopg2.connect(DATABASE_URL)
+        # Note: RealDictCursor is set per-cursor, not per-connection
+        return conn
     else:
         # SQLite connection
         conn = sqlite3.connect(DATABASE_URL, check_same_thread=False)

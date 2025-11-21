@@ -206,7 +206,14 @@ async def get_strategies(conn = Depends(get_db)):
 @router.get("/backtest_runs", response_model=List[BacktestRunResponse])
 async def get_backtest_runs(conn = Depends(get_db)):
     try:
-        cursor = conn.cursor(); cursor.execute("SELECT * FROM backtest_runs ORDER BY timestamp DESC"); runs_data = cursor.fetchall()
+        from database.database import USE_POSTGRES
+        if USE_POSTGRES:
+            from psycopg2.extras import RealDictCursor
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+        else:
+            cursor = conn.cursor()
+        cursor.execute("SELECT * FROM backtest_runs ORDER BY timestamp DESC")
+        runs_data = cursor.fetchall()
         runs = []
         for row in runs_data:
             run = dict(row); run['timestamp'] = datetime.fromisoformat(run['timestamp'])
@@ -221,10 +228,12 @@ async def get_backtest_runs(conn = Depends(get_db)):
 async def get_backtest_run_details(run_id: int, conn = Depends(get_db)):
     try:
         from database.database import USE_POSTGRES
-        cursor = conn.cursor()
         if USE_POSTGRES:
+            from psycopg2.extras import RealDictCursor
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
             cursor.execute("SELECT * FROM backtest_runs WHERE id = %s", (run_id,))
         else:
+            cursor = conn.cursor()
             cursor.execute("SELECT * FROM backtest_runs WHERE id = ?", (run_id,))
         run_data = cursor.fetchone()
         if not run_data: raise HTTPException(status_code=404, detail=f"Backtest run with ID {run_id} not found.")
