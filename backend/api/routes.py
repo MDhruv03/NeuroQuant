@@ -63,7 +63,7 @@ async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 @router.post("/backtest", response_model=BacktestResponse)
-async def run_backtest(request: BacktestRequest, conn: sqlite3.Connection = Depends(get_db)):
+async def run_backtest(request: BacktestRequest, conn = Depends(get_db)):
     try:
         start_date = datetime.strptime(request.start_date, "%Y-%m-%d") if request.start_date else datetime.now() - timedelta(days=365)
         end_date = datetime.strptime(request.end_date, "%Y-%m-%d") if request.end_date else datetime.now()
@@ -110,7 +110,14 @@ async def run_backtest(request: BacktestRequest, conn: sqlite3.Connection = Depe
             )
         
         cursor = conn.cursor()
-        cursor.execute("""INSERT INTO backtest_runs (timestamp, symbol, agent_id, agent_name, test_period, agent_return, buy_hold_return, outperformance, total_trades, final_value, trades, portfolio_history, portfolio_dates) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (datetime.now().isoformat(), request.symbol, None, strategy.name, f"{start_date.date()} to {end_date.date()}", float(results['total_return_pct']), float(buy_hold_return), float(results['total_return_pct'] - buy_hold_return), int(results['fills_received']), float(results['final_equity']), json.dumps(results.get('trades', [])), json.dumps(equity_curve), json.dumps(timestamps_iso)))
+        # Detect database type and use appropriate placeholder syntax
+        from database.database import USE_POSTGRES
+        if USE_POSTGRES:
+            # PostgreSQL uses %s placeholders
+            cursor.execute("""INSERT INTO backtest_runs (timestamp, symbol, agent_id, agent_name, test_period, agent_return, buy_hold_return, outperformance, total_trades, final_value, trades, portfolio_history, portfolio_dates) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (datetime.now().isoformat(), request.symbol, None, strategy.name, f"{start_date.date()} to {end_date.date()}", float(results['total_return_pct']), float(buy_hold_return), float(results['total_return_pct'] - buy_hold_return), int(results['fills_received']), float(results['final_equity']), json.dumps(results.get('trades', [])), json.dumps(equity_curve), json.dumps(timestamps_iso)))
+        else:
+            # SQLite uses ? placeholders
+            cursor.execute("""INSERT INTO backtest_runs (timestamp, symbol, agent_id, agent_name, test_period, agent_return, buy_hold_return, outperformance, total_trades, final_value, trades, portfolio_history, portfolio_dates) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (datetime.now().isoformat(), request.symbol, None, strategy.name, f"{start_date.date()} to {end_date.date()}", float(results['total_return_pct']), float(buy_hold_return), float(results['total_return_pct'] - buy_hold_return), int(results['fills_received']), float(results['final_equity']), json.dumps(results.get('trades', [])), json.dumps(equity_curve), json.dumps(timestamps_iso)))
         conn.commit()
         return BacktestResponse(symbol=request.symbol, test_period=f"{start_date.date()} to {end_date.date()}", agent_return=results['total_return_pct'], buy_hold_return=buy_hold_return, outperformance=results['total_return_pct'] - buy_hold_return, total_trades=results['fills_received'], final_value=results['final_equity'], sharpe_ratio=results['sharpe_ratio'], sortino_ratio=results['sortino_ratio'], max_drawdown=results['max_drawdown_pct'], value_at_risk_95=results.get('value_at_risk_95'), value_at_risk_99=results.get('value_at_risk_99'), conditional_var_95=results.get('conditional_var_95'), conditional_var_99=results.get('conditional_var_99'), trades=results.get('trades', []), portfolio_history=equity_curve, portfolio_dates=timestamps_iso, shadow=shadow_data, comparison=comparison_data)
     except Exception as e:
@@ -182,7 +189,7 @@ async def get_available_strategies():
     return {"strategies": [{"id": "ma_cross", "name": "Moving Average Crossover", "description": "Classic trend-following strategy", "parameters": {"short_window": {"type": "int", "default": 20, "min": 5, "max": 100}, "long_window": {"type": "int", "default": 50, "min": 20, "max": 200}}}, {"id": "rsi", "name": "RSI Mean Reversion", "description": "Mean reversion strategy", "parameters": {"period": {"type": "int", "default": 14, "min": 5, "max": 30}, "oversold": {"type": "int", "default": 30, "min": 10, "max": 40}, "overbought": {"type": "int", "default": 70, "min": 60, "max": 90}}}, {"id": "momentum", "name": "Momentum Strategy", "description": "Momentum-based strategy", "parameters": {"lookback": {"type": "int", "default": 20, "min": 10, "max": 60}}}, {"id": "buy_hold", "name": "Buy & Hold", "description": "Benchmark strategy", "parameters": {}}]}
 
 @router.post("/agents", response_model=StrategyResponse)
-async def create_strategy(request: StrategyCreateRequest, conn: sqlite3.Connection = Depends(get_db)):
+async def create_strategy(request: StrategyCreateRequest, conn = Depends(get_db)):
     try:
         new_strategy = strategy_manager.create_strategy(conn, name=request.name, strategy_type=request.type, parameters=request.parameters)
         return StrategyResponse(**new_strategy)
@@ -190,14 +197,14 @@ async def create_strategy(request: StrategyCreateRequest, conn: sqlite3.Connecti
     except Exception as e: traceback.print_exc(); raise HTTPException(status_code=500, detail="Failed to create strategy.")
 
 @router.get("/agents", response_model=List[StrategyResponse])
-async def get_strategies(conn: sqlite3.Connection = Depends(get_db)):
+async def get_strategies(conn = Depends(get_db)):
     try:
         strategies = strategy_manager.get_strategies(conn)
         return [StrategyResponse(**strategy) for strategy in strategies]
     except Exception as e: traceback.print_exc(); raise HTTPException(status_code=500, detail="Failed to retrieve strategies.")
 
 @router.get("/backtest_runs", response_model=List[BacktestRunResponse])
-async def get_backtest_runs(conn: sqlite3.Connection = Depends(get_db)):
+async def get_backtest_runs(conn = Depends(get_db)):
     try:
         cursor = conn.cursor(); cursor.execute("SELECT * FROM backtest_runs ORDER BY timestamp DESC"); runs_data = cursor.fetchall()
         runs = []
@@ -211,9 +218,15 @@ async def get_backtest_runs(conn: sqlite3.Connection = Depends(get_db)):
     except Exception as e: traceback.print_exc(); raise HTTPException(status_code=500, detail="Failed to retrieve backtest runs.")
 
 @router.get("/backtest_runs/{run_id}", response_model=BacktestRunResponse)
-async def get_backtest_run_details(run_id: int, conn: sqlite3.Connection = Depends(get_db)):
+async def get_backtest_run_details(run_id: int, conn = Depends(get_db)):
     try:
-        cursor = conn.cursor(); cursor.execute("SELECT * FROM backtest_runs WHERE id = ?", (run_id,)); run_data = cursor.fetchone()
+        from database.database import USE_POSTGRES
+        cursor = conn.cursor()
+        if USE_POSTGRES:
+            cursor.execute("SELECT * FROM backtest_runs WHERE id = %s", (run_id,))
+        else:
+            cursor.execute("SELECT * FROM backtest_runs WHERE id = ?", (run_id,))
+        run_data = cursor.fetchone()
         if not run_data: raise HTTPException(status_code=404, detail=f"Backtest run with ID {run_id} not found.")
         run = dict(run_data); run['timestamp'] = datetime.fromisoformat(run['timestamp'])
         run['trades'] = json.loads(run['trades']) if run['trades'] else []
@@ -223,7 +236,7 @@ async def get_backtest_run_details(run_id: int, conn: sqlite3.Connection = Depen
     except Exception as e: traceback.print_exc(); raise HTTPException(status_code=500, detail="Failed to retrieve backtest run details.")
 
 @router.get("/compare_strategies")
-async def compare_strategies(symbol: str = "AAPL", start_date: Optional[str] = None, end_date: Optional[str] = None, conn: sqlite3.Connection = Depends(get_db)):
+async def compare_strategies(symbol: str = "AAPL", start_date: Optional[str] = None, end_date: Optional[str] = None, conn = Depends(get_db)):
     """Compare all available strategies on the same symbol and timeframe"""
     try:
         start = datetime.strptime(start_date, "%Y-%m-%d") if start_date else datetime.now() - timedelta(days=365)

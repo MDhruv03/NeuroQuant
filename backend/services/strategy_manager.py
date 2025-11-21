@@ -1,4 +1,3 @@
-import sqlite3
 import json
 from typing import List, Dict
 
@@ -11,20 +10,30 @@ class StrategyManager:
         """Initialize the strategy manager"""
         pass
 
-    def create_strategy(self, conn: sqlite3.Connection, name: str, strategy_type: str, parameters: Dict) -> Dict:
+    def create_strategy(self, conn, name: str, strategy_type: str, parameters: Dict) -> Dict:
         """Create a new trading strategy"""
+        from database.database import USE_POSTGRES
         cursor = conn.cursor()
         try:
-            cursor.execute(
-                "INSERT INTO agents (name, type, parameters) VALUES (?, ?, ?)",
-                (name, strategy_type, json.dumps(parameters))
-            )
+            if USE_POSTGRES:
+                cursor.execute(
+                    "INSERT INTO agents (name, type, parameters) VALUES (%s, %s, %s)",
+                    (name, strategy_type, json.dumps(parameters))
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO agents (name, type, parameters) VALUES (?, ?, ?)",
+                    (name, strategy_type, json.dumps(parameters))
+                )
             conn.commit()
             return {"id": cursor.lastrowid, "name": name, "type": strategy_type, "parameters": parameters}
-        except sqlite3.IntegrityError:
-            raise ValueError(f"Strategy with name '{name}' already exists.")
+        except Exception as e:
+            # Handle both SQLite IntegrityError and PostgreSQL IntegrityError
+            if "unique" in str(e).lower() or "integrity" in str(e).lower():
+                raise ValueError(f"Strategy with name '{name}' already exists.")
+            raise
 
-    def get_strategies(self, conn: sqlite3.Connection) -> List[Dict]:
+    def get_strategies(self, conn) -> List[Dict]:
         """Get all trading strategies"""
         cursor = conn.cursor()
         cursor.execute("SELECT id, name, type, parameters FROM agents")
@@ -37,10 +46,14 @@ class StrategyManager:
             strategies.append(strategy)
         return strategies
 
-    def get_strategy_by_id(self, conn: sqlite3.Connection, strategy_id: int) -> Dict:
+    def get_strategy_by_id(self, conn, strategy_id: int) -> Dict:
         """Get a specific strategy by ID"""
+        from database.database import USE_POSTGRES
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, type, parameters FROM agents WHERE id = ?", (strategy_id,))
+        if USE_POSTGRES:
+            cursor.execute("SELECT id, name, type, parameters FROM agents WHERE id = %s", (strategy_id,))
+        else:
+            cursor.execute("SELECT id, name, type, parameters FROM agents WHERE id = ?", (strategy_id,))
         strategy_data = cursor.fetchone()
         if strategy_data:
             strategy = dict(strategy_data)
