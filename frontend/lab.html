@@ -6,72 +6,100 @@
     <title>Financial Laboratory - NeuroQuant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .mobile-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .mobile-menu.active {
+            max-height: 500px;
+        }
+    </style>
 </head>
 <body class="bg-neutral-950 text-neutral-100 font-mono">
     <!-- Header -->
     <div class="border-b border-neutral-900 bg-black/50 backdrop-blur-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-8">
-                <h1 class="text-xl font-bold text-green-500">[ NeuroQuant ]</h1>
-                <nav class="flex gap-6 text-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-lg sm:text-xl font-bold text-green-500">[ NeuroQuant ]</h1>
+                
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex gap-6 text-sm">
                     <a href="/dashboard" class="text-neutral-500 hover:text-neutral-100">Dashboard</a>
                     <a href="/strategies" class="text-neutral-500 hover:text-neutral-100">Strategies</a>
                     <a href="/backtest" class="text-neutral-500 hover:text-neutral-100">Backtest</a>
                     <a href="/compare" class="text-neutral-500 hover:text-neutral-100">Compare</a>
                     <a href="/lab" class="text-neutral-100 border-b-2 border-green-500">Lab</a>
                 </nav>
+
+                <!-- Mobile menu button -->
+                <button id="mobileMenuBtn" class="md:hidden p-2 rounded-lg hover:bg-neutral-900 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
             </div>
+
+            <!-- Mobile Navigation -->
+            <nav id="mobileMenu" class="mobile-menu md:hidden mt-4 space-y-2">
+                <a href="/dashboard" class="block px-4 py-2 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-900 rounded-lg transition">Dashboard</a>
+                <a href="/strategies" class="block px-4 py-2 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-900 rounded-lg transition">Strategies</a>
+                <a href="/backtest" class="block px-4 py-2 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-900 rounded-lg transition">Backtest</a>
+                <a href="/compare" class="block px-4 py-2 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-900 rounded-lg transition">Compare</a>
+                <a href="/lab" class="block px-4 py-2 text-neutral-100 bg-neutral-900 border-l-2 border-green-500 rounded-lg">Lab</a>
+            </nav>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
         <!-- Header -->
-        <div class="mb-8">
-            <h2 class="text-3xl font-bold mb-2">Financial Laboratory</h2>
-            <p class="text-neutral-500">Advanced tools for portfolio optimization, financial modeling, and market analysis</p>
+        <div class="mb-6 sm:mb-8">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-2">Financial Laboratory</h2>
+            <p class="text-sm sm:text-base text-neutral-500">Advanced tools for portfolio optimization, financial modeling, and market analysis</p>
         </div>
 
         <!-- Tools Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
             <button onclick="showTool('optimizer')" id="btn-optimizer" 
-                    class="tool-btn bg-neutral-900 border-2 border-green-500 rounded-xl p-6 text-left hover:bg-neutral-800 transition">
-                <div class="text-sm text-green-500 mb-2">[ OPTIMIZER ]</div>
-                <div class="text-lg font-bold mb-1">Portfolio Optimization</div>
+                    class="tool-btn bg-neutral-900 border-2 border-green-500 rounded-xl p-4 sm:p-6 text-left hover:bg-neutral-800 transition">
+                <div class="text-xs sm:text-sm text-green-500 mb-2">[ OPTIMIZER ]</div>
+                <div class="text-base sm:text-lg font-bold mb-1">Portfolio Optimization</div>
                 <div class="text-xs text-neutral-500">Efficient Frontier, Risk Parity, Max Sharpe</div>
             </button>
             
             <button onclick="showTool('options')" id="btn-options"
-                    class="tool-btn bg-neutral-900 border-2 border-neutral-700 rounded-xl p-6 text-left hover:bg-neutral-800 transition">
-                <div class="text-sm text-neutral-500 mb-2">[ OPTIONS ]</div>
-                <div class="text-lg font-bold mb-1">Options Pricing</div>
+                    class="tool-btn bg-neutral-900 border-2 border-neutral-700 rounded-xl p-4 sm:p-6 text-left hover:bg-neutral-800 transition">
+                <div class="text-xs sm:text-sm text-neutral-500 mb-2">[ OPTIONS ]</div>
+                <div class="text-base sm:text-lg font-bold mb-1">Options Pricing</div>
                 <div class="text-xs text-neutral-500">Black-Scholes, Greeks, Strategies</div>
             </button>
             
             <button onclick="showTool('dcf')" id="btn-dcf"
-                    class="tool-btn bg-neutral-900 border-2 border-neutral-700 rounded-xl p-6 text-left hover:bg-neutral-800 transition">
-                <div class="text-sm text-neutral-500 mb-2">[ VALUATION ]</div>
-                <div class="text-lg font-bold mb-1">DCF Model</div>
+                    class="tool-btn bg-neutral-900 border-2 border-neutral-700 rounded-xl p-4 sm:p-6 text-left hover:bg-neutral-800 transition">
+                <div class="text-xs sm:text-sm text-neutral-500 mb-2">[ VALUATION ]</div>
+                <div class="text-base sm:text-lg font-bold mb-1">DCF Model</div>
                 <div class="text-xs text-neutral-500">Discounted Cash Flow, Sensitivity</div>
             </button>
             
             <button onclick="showTool('montecarlo')" id="btn-montecarlo"
-                    class="tool-btn bg-neutral-900 border-2 border-neutral-700 rounded-xl p-6 text-left hover:bg-neutral-800 transition">
-                <div class="text-sm text-neutral-500 mb-2">[ SIMULATION ]</div>
-                <div class="text-lg font-bold mb-1">Monte Carlo</div>
+                    class="tool-btn bg-neutral-900 border-2 border-neutral-700 rounded-xl p-4 sm:p-6 text-left hover:bg-neutral-800 transition">
+                <div class="text-xs sm:text-sm text-neutral-500 mb-2">[ SIMULATION ]</div>
+                <div class="text-base sm:text-lg font-bold mb-1">Monte Carlo</div>
                 <div class="text-xs text-neutral-500">Price Simulation, Scenarios</div>
             </button>
             
             <button onclick="showTool('correlation')" id="btn-correlation"
-                    class="tool-btn bg-neutral-900 border-2 border-neutral-700 rounded-xl p-6 text-left hover:bg-neutral-800 transition">
-                <div class="text-sm text-neutral-500 mb-2">[ ANALYSIS ]</div>
-                <div class="text-lg font-bold mb-1">Correlation Matrix</div>
+                    class="tool-btn bg-neutral-900 border-2 border-neutral-700 rounded-xl p-4 sm:p-6 text-left hover:bg-neutral-800 transition">
+                <div class="text-xs sm:text-sm text-neutral-500 mb-2">[ ANALYSIS ]</div>
+                <div class="text-base sm:text-lg font-bold mb-1">Correlation Matrix</div>
                 <div class="text-xs text-neutral-500">Asset Correlations, Diversification</div>
             </button>
             
             <button onclick="showTool('streaming')" id="btn-streaming"
-                    class="tool-btn bg-neutral-900 border-2 border-neutral-700 rounded-xl p-6 text-left hover:bg-neutral-800 transition">
-                <div class="text-sm text-neutral-500 mb-2">[ REAL-TIME ]</div>
-                <div class="text-lg font-bold mb-1">Market Data Stream</div>
+                    class="tool-btn bg-neutral-900 border-2 border-neutral-700 rounded-xl p-4 sm:p-6 text-left hover:bg-neutral-800 transition">
+                <div class="text-xs sm:text-sm text-neutral-500 mb-2">[ REAL-TIME ]</div>
+                <div class="text-base sm:text-lg font-bold mb-1">Market Data Stream</div>
                 <div class="text-xs text-neutral-500">Live Quotes, WebSocket</div>
             </button>
         </div>
@@ -80,10 +108,10 @@
         
         <!-- Portfolio Optimizer -->
         <div id="tool-optimizer" class="tool-section">
-            <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-6 mb-4">
-                <h3 class="text-sm font-mono text-green-500 mb-4">[ PORTFOLIO OPTIMIZATION ]</h3>
+            <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4 sm:p-6 mb-4">
+                <h3 class="text-xs sm:text-sm font-mono text-green-500 mb-4">[ PORTFOLIO OPTIMIZATION ]</h3>
                 
-                <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-xs text-neutral-500 mb-2">Symbols (comma-separated)</label>
                         <input type="text" id="opt-symbols" value="AAPL,MSFT,GOOGL,AMZN,TSLA" 
@@ -108,13 +136,13 @@
                     </div>
                 </div>
                 
-                <div class="flex gap-4">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     <button onclick="runOptimization()" 
-                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded text-sm font-bold">
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 rounded text-sm font-bold w-full sm:w-auto">
                         OPTIMIZE
                     </button>
                     <button onclick="calculateFrontier()" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold">
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 rounded text-sm font-bold w-full sm:w-auto">
                         EFFICIENT FRONTIER
                     </button>
                 </div>
@@ -122,18 +150,18 @@
 
             <!-- Results -->
             <div id="opt-results" class="hidden">
-                <div class="grid grid-cols-3 gap-4 mb-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                     <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
                         <div class="text-xs text-neutral-500 mb-1">Expected Return</div>
-                        <div class="text-2xl font-bold text-green-500" id="opt-return">-</div>
+                        <div class="text-xl sm:text-2xl font-bold text-green-500" id="opt-return">-</div>
                     </div>
                     <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
                         <div class="text-xs text-neutral-500 mb-1">Volatility</div>
-                        <div class="text-2xl font-bold text-blue-500" id="opt-vol">-</div>
+                        <div class="text-xl sm:text-2xl font-bold text-blue-500" id="opt-vol">-</div>
                     </div>
                     <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
                         <div class="text-xs text-neutral-500 mb-1">Sharpe Ratio</div>
-                        <div class="text-2xl font-bold text-yellow-500" id="opt-sharpe">-</div>
+                        <div class="text-xl sm:text-2xl font-bold text-yellow-500" id="opt-sharpe">-</div>
                     </div>
                 </div>
 
@@ -156,10 +184,10 @@
 
         <!-- Options Pricing -->
         <div id="tool-options" class="tool-section hidden">
-            <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-6 mb-4">
-                <h3 class="text-sm font-mono text-green-500 mb-4">[ OPTIONS PRICING - BLACK-SCHOLES ]</h3>
+            <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4 sm:p-6 mb-4">
+                <h3 class="text-xs sm:text-sm font-mono text-green-500 mb-4">[ OPTIONS PRICING - BLACK-SCHOLES ]</h3>
                 
-                <div class="grid grid-cols-3 gap-4 mb-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label class="block text-xs text-neutral-500 mb-2">Spot Price</label>
                         <input type="number" id="opt-spot" value="100" step="0.01"
@@ -195,24 +223,24 @@
                 </div>
                 
                 <button onclick="priceOption()" 
-                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded text-sm font-bold">
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 rounded text-sm font-bold w-full sm:w-auto">
                     CALCULATE
                 </button>
             </div>
 
             <div id="options-results" class="hidden">
-                <div class="grid grid-cols-6 gap-4 mb-4">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
                     <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
                         <div class="text-xs text-neutral-500 mb-1">Price</div>
-                        <div class="text-xl font-bold text-green-500" id="opt-price">-</div>
+                        <div class="text-lg sm:text-xl font-bold text-green-500" id="opt-price">-</div>
                     </div>
                     <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
                         <div class="text-xs text-neutral-500 mb-1">Delta</div>
-                        <div class="text-xl font-bold" id="opt-delta">-</div>
+                        <div class="text-lg sm:text-xl font-bold" id="opt-delta">-</div>
                     </div>
                     <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
                         <div class="text-xs text-neutral-500 mb-1">Gamma</div>
-                        <div class="text-xl font-bold" id="opt-gamma">-</div>
+                        <div class="text-lg sm:text-xl font-bold" id="opt-gamma">-</div>
                     </div>
                     <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
                         <div class="text-xs text-neutral-500 mb-1">Vega</div>
@@ -232,10 +260,10 @@
 
         <!-- DCF Model -->
         <div id="tool-dcf" class="tool-section hidden">
-            <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-6 mb-4">
-                <h3 class="text-sm font-mono text-green-500 mb-4">[ DCF VALUATION ]</h3>
+            <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4 sm:p-6 mb-4">
+                <h3 class="text-xs sm:text-sm font-mono text-green-500 mb-4">[ DCF VALUATION ]</h3>
                 
-                <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-xs text-neutral-500 mb-2">Free Cash Flows (comma-separated, millions)</label>
                         <input type="text" id="dcf-fcf" value="100,110,121,133,146" 
@@ -259,7 +287,7 @@
                 </div>
                 
                 <button onclick="calculateDCF()" 
-                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded text-sm font-bold">
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 rounded text-sm font-bold w-full sm:w-auto">
                     CALCULATE
                 </button>
             </div>
@@ -305,10 +333,10 @@
 
         <!-- Monte Carlo -->
         <div id="tool-montecarlo" class="tool-section hidden">
-            <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-6 mb-4">
-                <h3 class="text-sm font-mono text-green-500 mb-4">[ MONTE CARLO SIMULATION ]</h3>
+            <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4 sm:p-6 mb-4">
+                <h3 class="text-xs sm:text-sm font-mono text-green-500 mb-4">[ MONTE CARLO SIMULATION ]</h3>
                 
-                <div class="grid grid-cols-3 gap-4 mb-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label class="block text-xs text-neutral-500 mb-2">Initial Price</label>
                         <input type="number" id="mc-initial" value="100" step="0.01"
@@ -337,7 +365,7 @@
                 </div>
                 
                 <button onclick="runMonteCarlo()" 
-                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded text-sm font-bold">
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 rounded text-sm font-bold w-full sm:w-auto">
                     SIMULATE
                 </button>
             </div>
@@ -377,10 +405,10 @@
 
         <!-- Correlation Matrix -->
         <div id="tool-correlation" class="tool-section hidden">
-            <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-6 mb-4">
-                <h3 class="text-sm font-mono text-green-500 mb-4">[ CORRELATION MATRIX ]</h3>
+            <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4 sm:p-6 mb-4">
+                <h3 class="text-xs sm:text-sm font-mono text-green-500 mb-4">[ CORRELATION MATRIX ]</h3>
                 
-                <div class="grid grid-cols-3 gap-4 mb-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                     <div class="col-span-3">
                         <label class="block text-xs text-neutral-500 mb-2">Symbols (comma-separated)</label>
                         <input type="text" id="corr-symbols" value="AAPL,MSFT,GOOGL,AMZN,TSLA,SPY" 
@@ -397,7 +425,7 @@
                 </div>
                 
                 <button onclick="calculateCorrelation()" 
-                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded text-sm font-bold">
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 rounded text-sm font-bold w-full sm:w-auto">
                     CALCULATE
                 </button>
             </div>
@@ -413,10 +441,10 @@
 
         <!-- Real-Time Streaming -->
         <div id="tool-streaming" class="tool-section hidden">
-            <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-6 mb-4">
-                <h3 class="text-sm font-mono text-green-500 mb-4">[ REAL-TIME MARKET DATA STREAM ]</h3>
+            <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4 sm:p-6 mb-4">
+                <h3 class="text-xs sm:text-sm font-mono text-green-500 mb-4">[ REAL-TIME MARKET DATA STREAM ]</h3>
                 
-                <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-xs text-neutral-500 mb-2">Symbol</label>
                         <input type="text" id="stream-symbol" value="AAPL" 
@@ -424,19 +452,19 @@
                     </div>
                 </div>
                 
-                <div class="flex gap-4">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     <button onclick="startStreaming()" id="stream-start-btn"
-                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded text-sm font-bold">
+                            class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 rounded text-sm font-bold">
                         START STREAM
                     </button>
                     <button onclick="stopStreaming()" id="stream-stop-btn" disabled
-                            class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded text-sm font-bold disabled:opacity-50">
+                            class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2 rounded text-sm font-bold disabled:opacity-50">
                         STOP STREAM
                     </button>
                 </div>
             </div>
 
-            <div id="stream-data" class="grid grid-cols-4 gap-4 mb-4">
+            <div id="stream-data" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                 <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
                     <div class="text-xs text-neutral-500 mb-1">Price</div>
                     <div class="text-2xl font-bold text-green-500" id="stream-price">--</div>
@@ -1210,6 +1238,11 @@
                 }
             });
         }
+
+        // Mobile menu toggle
+        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+            document.getElementById('mobileMenu').classList.toggle('active');
+        });
     </script>
 </body>
 </html>
