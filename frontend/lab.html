@@ -17,42 +17,51 @@
         }
     </style>
 </head>
-<body class="bg-neutral-950 text-neutral-100 font-mono">
+<body class="bg-black text-white min-h-screen">
     <!-- Header -->
-    <div class="border-b border-neutral-900 bg-black/50 backdrop-blur-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4">
-            <div class="flex justify-between items-center">
-                <h1 class="text-lg sm:text-xl font-bold text-green-500">[ NeuroQuant ]</h1>
+    <header class="border-b border-neutral-900 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-lg sm:text-xl font-semibold">NeuroQuant</h1>
                 
                 <!-- Desktop Navigation -->
-                <nav class="hidden md:flex gap-6 text-sm">
-                    <a href="/dashboard" class="text-neutral-500 hover:text-neutral-100">Dashboard</a>
-                    <a href="/strategies" class="text-neutral-500 hover:text-neutral-100">Strategies</a>
-                    <a href="/backtest" class="text-neutral-500 hover:text-neutral-100">Backtest</a>
-                    <a href="/compare" class="text-neutral-500 hover:text-neutral-100">Compare</a>
-                    <a href="/lab" class="text-neutral-100 border-b-2 border-green-500">Lab</a>
+                <nav class="hidden md:flex items-center space-x-6 text-sm">
+                    <a href="/" class="text-neutral-400 hover:text-white transition">Home</a>
+                    <a href="/dashboard" class="text-neutral-400 hover:text-white transition">Dashboard</a>
+                    <a href="/strategies" class="text-neutral-400 hover:text-white transition">Strategies</a>
+                    <a href="/backtest" class="text-neutral-400 hover:text-white transition">Backtest</a>
+                    <a href="/compare" class="text-neutral-400 hover:text-white transition">Compare</a>
+                    <a href="/lab" class="text-white font-medium">Lab</a>
                 </nav>
 
-                <!-- Mobile menu button -->
-                <button id="mobileMenuBtn" class="md:hidden p-2 rounded-lg hover:bg-neutral-900 transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                    </svg>
-                </button>
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-2 px-3 py-1.5 bg-neutral-900 rounded-lg">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs font-mono text-neutral-400">LIVE</span>
+                    </div>
+
+                    <!-- Mobile menu button -->
+                    <button id="mobileMenuBtn" class="md:hidden p-2 rounded-lg hover:bg-neutral-900 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <!-- Mobile Navigation -->
             <nav id="mobileMenu" class="mobile-menu md:hidden mt-4 space-y-2">
-                <a href="/dashboard" class="block px-4 py-2 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-900 rounded-lg transition">Dashboard</a>
-                <a href="/strategies" class="block px-4 py-2 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-900 rounded-lg transition">Strategies</a>
-                <a href="/backtest" class="block px-4 py-2 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-900 rounded-lg transition">Backtest</a>
-                <a href="/compare" class="block px-4 py-2 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-900 rounded-lg transition">Compare</a>
-                <a href="/lab" class="block px-4 py-2 text-neutral-100 bg-neutral-900 border-l-2 border-green-500 rounded-lg">Lab</a>
+                <a href="/" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Home</a>
+                <a href="/dashboard" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Dashboard</a>
+                <a href="/strategies" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Strategies</a>
+                <a href="/backtest" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Backtest</a>
+                <a href="/compare" class="block px-4 py-2 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-lg transition">Compare</a>
+                <a href="/lab" class="block px-4 py-2 text-white font-medium bg-neutral-900 rounded-lg">Lab</a>
             </nav>
         </div>
-    </div>
+    </header>
 
-    <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <!-- Header -->
         <div class="mb-6 sm:mb-8">
             <h2 class="text-2xl sm:text-3xl font-bold mb-2">Financial Laboratory</h2>
@@ -490,7 +499,14 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-neutral-900 mt-16 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 text-center text-sm text-neutral-500">
+            <p>NeuroQuant © 2025 • Algorithmic Trading Platform</p>
+        </div>
+    </footer>
 
     <script src="/static/components/header.js"></script>
     <script>
